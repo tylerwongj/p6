@@ -1,16 +1,16 @@
 import express from 'express'
 import { createServer } from 'http'
-import { Server } from 'socket.io'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { CollisionDetection } from '@tyler-arcade/2d-physics'
+import { MultiplayerServer } from '@tyler-arcade/multiplayer'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const app = express()
 const server = createServer(app)
-const io = new Server(server)
+const multiplayerServer = new MultiplayerServer(server)
 
 const PORT = process.env.PORT || 3000
 
@@ -122,77 +122,73 @@ class PongGameState {
 
 const gameState = new PongGameState()
 
-// Game loop
-let lastTime = Date.now()
-setInterval(() => {
-  const currentTime = Date.now()
-  const deltaTime = (currentTime - lastTime) / 1000
-  lastTime = currentTime
-  
+// Set up multiplayer callbacks
+multiplayerServer.on('playerJoin', (socketId, playerName, roomId) => {
+  if (gameState.players.length < 2) {
+    const playerId = gameState.players.length + 1
+    const player = {
+      id: socketId,
+      name: playerName,
+      playerId: playerId
+    }
+    
+    gameState.players.push(player)
+    console.log(`${playerName} joined as Player ${playerId}`)
+    
+    return {
+      success: true,
+      playerData: { playerId, playerName }
+    }
+  } else {
+    return {
+      success: false,
+      reason: 'Game is full'
+    }
+  }
+})
+
+multiplayerServer.on('playerLeave', (socketId, player) => {
+  const playerIndex = gameState.players.findIndex(p => p.id === socketId)
+  if (playerIndex !== -1) {
+    const player = gameState.players[playerIndex]
+    gameState.players.splice(playerIndex, 1)
+    
+    // Reset player IDs
+    gameState.players.forEach((p, index) => {
+      p.playerId = index + 1
+    })
+    
+    console.log(`${player.name} left the game`)
+  }
+})
+
+multiplayerServer.on('playerInput', (socketId, input) => {
+  const player = gameState.players.find(p => p.id === socketId)
+  if (player) {
+    gameState.setPlayerInput(player.playerId, input)
+  }
+})
+
+multiplayerServer.on('customEvent', (socketId, eventName, args) => {
+  if (eventName === 'startBall') {
+    gameState.resetBall()
+  }
+})
+
+// Start game loop using multiplayer server
+multiplayerServer.startGameLoop((deltaTime) => {
   gameState.update(deltaTime)
   
   // Broadcast game state to all clients
-  io.emit('gameState', {
+  multiplayerServer.broadcast('gameState', {
     ball: gameState.ball,
     player1: gameState.player1,
     player2: gameState.player2,
     players: gameState.players
   })
-}, 1000 / 60) // 60 FPS
+}, 60)
 
-// Socket.io connection handling
-io.on('connection', (socket) => {
-  console.log('Player connected:', socket.id)
-
-  socket.on('joinGame', (data) => {
-    const playerName = data.name || 'Anonymous'
-    
-    if (gameState.players.length < 2) {
-      const playerId = gameState.players.length + 1
-      const player = {
-        id: socket.id,
-        name: playerName,
-        playerId: playerId
-      }
-      
-      gameState.players.push(player)
-      socket.emit('playerAssigned', { playerId, playerName })
-      
-      console.log(`${playerName} joined as Player ${playerId}`)
-    } else {
-      socket.emit('gameFull')
-    }
-  })
-
-  socket.on('playerInput', (input) => {
-    const player = gameState.players.find(p => p.id === socket.id)
-    if (player) {
-      gameState.setPlayerInput(player.playerId, input)
-    }
-  })
-
-  socket.on('startBall', () => {
-    gameState.resetBall()
-  })
-
-  socket.on('disconnect', () => {
-    console.log('Player disconnected:', socket.id)
-    
-    const playerIndex = gameState.players.findIndex(p => p.id === socket.id)
-    if (playerIndex !== -1) {
-      const player = gameState.players[playerIndex]
-      gameState.players.splice(playerIndex, 1)
-      
-      // Reset player IDs
-      gameState.players.forEach((p, index) => {
-        p.playerId = index + 1
-      })
-      
-      io.emit('playerLeft', { playerId: player.playerId })
-      console.log(`${player.name} left the game`)
-    }
-  })
-})
+// Multiplayer server handles all Socket.io connections automatically
 
 server.listen(PORT, () => {
   console.log(`Pong server running on http://localhost:${PORT}`)

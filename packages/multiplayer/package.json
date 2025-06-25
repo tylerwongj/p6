@@ -1,0 +1,27 @@
+{
+  "name": "@tyler-arcade/multiplayer",
+  "version": "1.0.0",
+  "description": "Real-time multiplayer networking for games - Socket.io wrapper with rooms and state sync",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "keywords": [
+    "game",
+    "multiplayer",
+    "socket.io",
+    "realtime",
+    "networking",
+    "rooms"
+  ],
+  "author": "Tyler",
+  "license": "MIT",
+  "dependencies": {
+    "socket.io": "^4.7.0"
+  },
+  "devDependencies": {}
+}
