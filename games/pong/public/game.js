@@ -1,4 +1,5 @@
 import { GameLoop, Canvas2D, EventBus } from '/node_modules/@tyler-arcade/core/src/index.js'
+import { InputManager } from '/node_modules/@tyler-arcade/2d-input/src/index.js'
 
 class PongGame {
   constructor() {
@@ -6,12 +7,12 @@ class PongGame {
     this.renderer = new Canvas2D(this.canvas)
     this.gameLoop = new GameLoop()
     this.events = new EventBus()
+    this.input = new InputManager()
     
     this.socket = io()
     this.playerId = null
     this.playerName = ''
     this.gameState = null
-    this.keys = {}
     
     this.setupSocket()
     this.setupInput()
@@ -46,25 +47,21 @@ class PongGame {
   }
 
   setupInput() {
-    document.addEventListener('keydown', (e) => {
-      this.keys[e.key.toLowerCase()] = true
-      
-      if (e.key === ' ') {
+    // Handle space key for starting ball
+    this.input.on('keydown', (e, key) => {
+      if (key === ' ') {
         e.preventDefault()
         this.socket.emit('startBall')
       }
     })
 
-    document.addEventListener('keyup', (e) => {
-      this.keys[e.key.toLowerCase()] = false
-    })
-
-    // Send input to server
+    // Send input to server using InputManager
     setInterval(() => {
       if (this.playerId) {
+        const inputState = this.input.getInputState()
         const input = {
-          up: this.keys['w'] || this.keys['arrowup'],
-          down: this.keys['s'] || this.keys['arrowdown']
+          up: inputState.up,
+          down: inputState.down
         }
         this.socket.emit('playerInput', input)
       }

@@ -11,11 +11,67 @@
 
 ## 🏗️ Architecture Philosophy
 
-**Working Game First → Extract Packages**
-- Build games that work
+**Working Game First → Extract Packages → Individual Repos**
+- Build games that work in monorepo
 - Extract proven, working code into packages  
 - Test each extraction step
+- Migrate to individual game repos when mature
 - No guessing if architecture works
+
+## 📊 Repository Evolution Strategy
+
+### Phase 1: Monorepo Development (Current)
+```
+tyler-arcade/
+├── packages/          # @tyler-arcade/* packages  
+├── games/            # All games together
+│   ├── pong/
+│   ├── snake/
+│   └── future games/
+├── public/           # Main hub + shared assets
+│   ├── index.html   # Game selection menu
+│   ├── games/       # Game-specific assets
+│   └── shared/      # Common UI/CSS
+└── server.js        # Single server with routing
+```
+
+**Benefits:** Easy development, package sharing, unified testing
+
+### Phase 2: Package Stabilization
+- Publish `@tyler-arcade/*` packages to npm
+- Battle-test packages across multiple games
+- Establish stable APIs and documentation
+
+### Phase 3: Game Extraction (Future)
+```
+@tyler-arcade/core     → npm package
+@tyler-arcade/2d-input → npm package  
+@tyler-arcade/physics  → npm package
+
+tyler-pong            → github.com/tyler/tyler-pong
+tyler-snake           → github.com/tyler/tyler-snake  
+tyler-wordle          → github.com/tyler/tyler-wordle
+tyler-tic-tac-toe     → github.com/tyler/tyler-tic-tac-toe
+
+tyler-game-hub        → github.com/tyler/tyler-game-hub
+                        ↳ Links to all deployed games
+```
+
+**When to extract:** After 3-4 working games, when packages are stable
+
+**Migration process:**
+1. Publish packages to npm
+2. Move each game to separate repo  
+3. Update games to use published packages
+4. Deploy each game to separate Railway instance
+5. Create lightweight hub that links to deployed games
+
+**Benefits of individual repos:**
+- Independent development cycles
+- Separate contributors per game
+- Game-specific documentation
+- Independent versioning and deployment
+- No single point of failure
 
 ## ✅ Current Status (Phase 1 Complete)
 
@@ -108,7 +164,7 @@ Extract UI components:
 - **Performance**: Client-side prediction and interpolation
 - **Testing**: ngrok for multiplayer testing
 
-## 📁 Current Structure
+## 📁 Current Structure (Phase 1)
 
 ```
 p6/
@@ -130,6 +186,31 @@ p6/
 ├── package.json          # Workspace root
 └── README.md            # Project overview
 ```
+
+## 🚀 Planned Hub Architecture
+
+**Future unified server structure:**
+```
+tyler-arcade/
+├── packages/          # @tyler-arcade/* packages  
+├── games/            # Game implementations only
+│   ├── pong/        # Game logic & assets
+│   └── snake/       # Game logic & assets
+├── public/          # Main hub interface
+│   ├── index.html  # Game selection menu
+│   ├── app.js      # Hub navigation
+│   ├── games/      # Game-specific public assets
+│   └── shared/     # Common UI/CSS (dark theme)
+└── server.js       # Unified server with routing
+```
+
+**Server routing:**
+- `/` → Game selection hub (dark theme menu)
+- `/pong` → Pong game interface
+- `/snake` → Snake game interface  
+- `/api/games` → Available games list
+
+This provides a single deployment with multiple games while maintaining clean separation.
 
 ## 🎯 Development Principles
 
@@ -161,6 +242,7 @@ npm init
 
 ## 📋 TODO: Next Steps
 
+### Phase 2A: Package Extraction (Immediate)
 1. **Extract @tyler-arcade/2d-input** from Pong
    - Move input handling code to package
    - Update Pong to use package
@@ -170,15 +252,33 @@ npm init
    - Move collision detection to package
    - Update Pong physics to use package
    - Test physics still work
-   
-3. **Build second game** (Snake or Tic-tac-toe)
+
+3. **Extract @tyler-arcade/multiplayer** from Pong
+   - Move Socket.io networking to package
+   - Update Pong to use package
+   - Test real-time sync still works
+
+### Phase 2B: Hub Development
+4. **Create unified server** 
+   - Refactor to single server with routing
+   - Build game selection hub interface
+   - Implement dark theme consistency
+
+5. **Build second game** (Snake or Tic-tac-toe)
    - Use all extracted packages
    - Validate package reusability
-   
-4. **Create tyler-arcade-hub**
-   - Main entry point with game selection
-   - Consistent UI/UX across games
-   - Dynamic game loading
+   - Test hub routing
+
+### Phase 3: Migration Planning (Future)
+6. **Package stabilization**
+   - Publish packages to npm when mature
+   - Establish versioning strategy
+   - Create package documentation
+
+7. **Individual repo extraction**
+   - Move games to separate repos when ready
+   - Deploy each game independently
+   - Create lightweight hub coordinator
 
 ## 💡 Key Insights
 

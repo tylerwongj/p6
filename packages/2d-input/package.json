@@ -1,0 +1,26 @@
+{
+  "name": "@tyler-arcade/2d-input",
+  "version": "1.0.0",
+  "description": "Unified input handling for 2D games - keyboard, mouse, touch, gamepad",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "keywords": [
+    "game",
+    "input",
+    "keyboard",
+    "mouse",
+    "touch",
+    "gamepad",
+    "2d"
+  ],
+  "author": "Tyler",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}
