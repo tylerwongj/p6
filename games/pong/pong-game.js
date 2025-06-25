@@ -18,8 +18,13 @@ export class PongGame {
   setupMultiplayer() {
     // Set up multiplayer callbacks
     this.multiplayerServer.on('playerJoin', (socketId, playerName, roomId) => {
+      console.log(`PongGame: playerJoin event - ${playerName} wants to join room ${roomId}`)
+      
       // Only handle pong room joins or default room
-      if (roomId !== 'pong' && roomId !== 'main') return null
+      if (roomId !== 'pong' && roomId !== 'main') {
+        console.log(`PongGame: Rejecting join for room ${roomId} (not pong or main)`)
+        return null
+      }
       
       if (this.gameState.players.length < 2) {
         const playerId = this.gameState.players.length + 1

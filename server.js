@@ -21,10 +21,14 @@ app.use('/node_modules', express.static('node_modules'))
 const games = new Map()
 
 // Initialize Pong game
+console.log('Attempting to import Pong game...')
 import('./games/pong/pong-game.js').then(({ PongGame }) => {
+  console.log('PongGame imported successfully')
   const pongGame = new PongGame(multiplayerServer)
   games.set('pong', pongGame)
-  console.log('Pong game initialized')
+  console.log('Pong game initialized, players:', pongGame.getPlayerCount())
+}).catch(error => {
+  console.error('Failed to import PongGame:', error)
 })
 
 // Routes
@@ -32,12 +36,13 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'))
 })
 
+// Serve Pong game assets FIRST (before the HTML route)
+app.use('/pong', express.static(path.join(__dirname, 'games', 'pong', 'public')))
+
+// Serve Pong game HTML (this will handle /pong when it's not a static file)
 app.get('/pong', (req, res) => {
   res.sendFile(path.join(__dirname, 'games', 'pong', 'public', 'index.html'))
 })
-
-// Serve Pong game assets
-app.use('/pong', express.static(path.join(__dirname, 'games', 'pong', 'public')))
 
 // API Routes
 app.get('/api/games', (req, res) => {

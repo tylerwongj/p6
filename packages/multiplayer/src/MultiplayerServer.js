@@ -65,8 +65,12 @@ export class MultiplayerServer {
     const playerName = data.name || 'Anonymous'
     const roomId = data.roomId || 'main'
     
+    console.log(`MultiplayerServer: Player ${playerName} trying to join room ${roomId}`)
+    
     if (this.callbacks.playerJoin) {
+      console.log('MultiplayerServer: Calling playerJoin callback')
       const result = this.callbacks.playerJoin(socket.id, playerName, roomId, socket)
+      console.log('MultiplayerServer: playerJoin callback result:', result)
       
       if (result && result.success) {
         // Join socket to room
