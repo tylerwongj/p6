@@ -289,9 +289,16 @@ class SnakeGameState {
     
     // Check if game should end
     const alivePlayers = this.players.filter(p => p.alive)
-    if (alivePlayers.length <= 1 && this.players.length > 1) {
+    if (alivePlayers.length <= 1 && this.players.length > 1 && this.gameStatus !== 'ended') {
       this.gameStatus = 'ended'
       console.log('Snake game ended!')
+      
+      // Auto-restart after 3 seconds
+      setTimeout(() => {
+        if (this.players.length > 0) {
+          this.resetGame()
+        }
+      }, 3000)
     }
   }
 
@@ -347,13 +354,20 @@ class SnakeGameState {
   }
 
   resetGame() {
-    this.players.forEach(player => {
+    const startPositions = [
+      {x: 100, y: 100},
+      {x: 300, y: 100}, 
+      {x: 100, y: 200},
+      {x: 300, y: 200}
+    ]
+    
+    this.players.forEach((player, index) => {
       player.alive = true
       player.score = 0
-      player.snake = this.createSnake({ x: 100, y: 100 })
+      player.snake = this.createSnake(startPositions[index] || startPositions[0])
     })
     this.food = this.generateFood()
-    this.gameStatus = 'waiting'
+    this.gameStatus = 'playing' // Start playing immediately after reset
     console.log('Snake game reset!')
   }
 }

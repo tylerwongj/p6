@@ -56,7 +56,11 @@ export class MultiplayerServer {
 
       // Handle custom events dynamically
       socket.onAny((eventName, ...args) => {
-        if (this.callbacks.customEvent) {
+        // Filter out Socket.io internal events
+        const internalEvents = ['connect', 'disconnect', 'disconnecting', 'newListener', 'removeListener', 'joinGame', 'playerInput', 'gameEvent']
+        
+        if (!internalEvents.includes(eventName) && this.callbacks.customEvent) {
+          console.log(`MultiplayerServer: Routing custom event '${eventName}' from ${socket.id}`)
           this.callbacks.customEvent(socket.id, eventName, args, socket)
         }
       })
