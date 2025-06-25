@@ -1,0 +1,25 @@
+{
+  "name": "@tyler-arcade/2d-physics",
+  "version": "1.0.0",
+  "description": "2D physics and collision detection for games - vectors, shapes, collision detection",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "keywords": [
+    "game",
+    "physics",
+    "collision",
+    "2d",
+    "vector",
+    "math"
+  ],
+  "author": "Tyler",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}

@@ -3,6 +3,7 @@ import { createServer } from 'http'
 import { Server } from 'socket.io'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { CollisionDetection } from '@tyler-arcade/2d-physics'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -64,23 +65,29 @@ class PongGameState {
     // Ball collision with top/bottom walls
     if (this.ball.y <= this.ball.radius || this.ball.y >= 400 - this.ball.radius) {
       this.ball.velocityY = -this.ball.velocityY
+      // Keep ball within bounds
+      this.ball.y = Math.max(this.ball.radius, Math.min(400 - this.ball.radius, this.ball.y))
     }
 
-    // Ball collision with paddles
-    if (this.ball.x <= this.player1.x + this.player1.width + this.ball.radius &&
-        this.ball.y >= this.player1.y &&
-        this.ball.y <= this.player1.y + this.player1.height &&
-        this.ball.velocityX < 0) {
+    // Ball collision with paddles using generic collision detection
+    const ballCircle = {x: this.ball.x, y: this.ball.y, radius: this.ball.radius}
+    const paddle1Rect = {x: this.player1.x, y: this.player1.y, width: this.player1.width, height: this.player1.height}
+    const paddle2Rect = {x: this.player2.x, y: this.player2.y, width: this.player2.width, height: this.player2.height}
+
+    // Left paddle collision
+    if (CollisionDetection.circleRectCollision(ballCircle, paddle1Rect) && this.ball.velocityX < 0) {
       this.ball.velocityX = -this.ball.velocityX
       this.ball.velocityY += this.player1.velocityY * 0.1
+      // Keep ball from getting stuck
+      this.ball.x = this.player1.x + this.player1.width + this.ball.radius
     }
 
-    if (this.ball.x >= this.player2.x - this.ball.radius &&
-        this.ball.y >= this.player2.y &&
-        this.ball.y <= this.player2.y + this.player2.height &&
-        this.ball.velocityX > 0) {
+    // Right paddle collision  
+    if (CollisionDetection.circleRectCollision(ballCircle, paddle2Rect) && this.ball.velocityX > 0) {
       this.ball.velocityX = -this.ball.velocityX
       this.ball.velocityY += this.player2.velocityY * 0.1
+      // Keep ball from getting stuck
+      this.ball.x = this.player2.x - this.ball.radius
     }
 
     // Ball out of bounds (scoring)
