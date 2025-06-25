@@ -1,106 +1,154 @@
 import { CollisionDetection } from '@tyler-arcade/2d-physics'
+import { BaseGame } from '@tyler-arcade/multiplayer'
 
 /**
  * PongGame - Pong game logic for hub integration
  */
-export class PongGame {
-  constructor(multiplayerServer) {
+export class PongGame extends BaseGame {
+  constructor() {
+    super()
     this.name = 'Pong'
     this.description = 'Classic paddle game - first to 5 points wins!'
     this.maxPlayers = 2
-    this.multiplayerServer = multiplayerServer
     this.gameState = new PongGameState()
+    this.gameLoopInterval = null
     
-    this.setupMultiplayer()
+    // Start game loop immediately
     this.startGameLoop()
   }
 
-  setupMultiplayer() {
-    // Set up multiplayer callbacks
-    this.multiplayerServer.on('playerJoin', (socketId, playerName, roomId) => {
-      console.log(`PongGame: playerJoin event - ${playerName} wants to join room ${roomId}`)
-      
-      // Only handle pong room joins or default room
-      if (roomId !== 'pong' && roomId !== 'main') {
-        console.log(`PongGame: Rejecting join for room ${roomId} (not pong or main)`)
-        return null
+  /**
+   * Handle a player trying to join Pong
+   */
+  handlePlayerJoin(socketId, playerName, roomId, socket) {
+    console.log(`PongGame: ${playerName} wants to join room ${roomId}`)
+    
+    // Only handle pong room joins
+    if (roomId !== 'pong') {
+      console.log(`PongGame: Rejecting join for room ${roomId} (not pong)`)
+      return {
+        success: false,
+        reason: 'Wrong room - this is Pong'
+      }
+    }
+    
+    if (this.gameState.players.length < 2) {
+      const playerId = this.gameState.players.length + 1
+      const player = {
+        id: socketId,
+        name: playerName,
+        playerId: playerId
       }
       
-      if (this.gameState.players.length < 2) {
-        const playerId = this.gameState.players.length + 1
-        const player = {
-          id: socketId,
-          name: playerName,
-          playerId: playerId
-        }
-        
-        this.gameState.players.push(player)
-        console.log(`${playerName} joined Pong as Player ${playerId}`)
-        
-        return {
-          success: true,
-          playerData: { playerId, playerName }
-        }
-      } else {
-        return {
-          success: false,
-          reason: 'Pong game is full'
-        }
+      this.gameState.players.push(player)
+      // Update parent class players array too
+      this.players = this.gameState.players
+      
+      console.log(`${playerName} joined Pong as Player ${playerId}`)
+      
+      return {
+        success: true,
+        playerData: { playerId, playerName }
       }
-    })
+    } else {
+      return {
+        success: false,
+        reason: 'Pong game is full'
+      }
+    }
+  }
 
-    this.multiplayerServer.on('playerLeave', (socketId, player) => {
-      const playerIndex = this.gameState.players.findIndex(p => p.id === socketId)
-      if (playerIndex !== -1) {
-        const player = this.gameState.players[playerIndex]
-        this.gameState.players.splice(playerIndex, 1)
-        
-        // Reset player IDs
-        this.gameState.players.forEach((p, index) => {
-          p.playerId = index + 1
-        })
-        
-        console.log(`${player.name} left Pong`)
-      }
-    })
+  /**
+   * Handle a player leaving Pong
+   */
+  handlePlayerLeave(socketId, player, socket) {
+    const playerIndex = this.gameState.players.findIndex(p => p.id === socketId)
+    if (playerIndex !== -1) {
+      const leavingPlayer = this.gameState.players[playerIndex]
+      this.gameState.players.splice(playerIndex, 1)
+      
+      // Reset player IDs
+      this.gameState.players.forEach((p, index) => {
+        p.playerId = index + 1
+      })
+      
+      // Update parent class players array
+      this.players = this.gameState.players
+      
+      console.log(`${leavingPlayer.name} left Pong`)
+    }
+  }
 
-    this.multiplayerServer.on('playerInput', (socketId, input) => {
-      const player = this.gameState.players.find(p => p.id === socketId)
-      if (player) {
-        this.gameState.setPlayerInput(player.playerId, input)
-      }
-    })
+  /**
+   * Handle player input for Pong
+   */
+  handlePlayerInput(socketId, input, socket) {
+    const player = this.gameState.players.find(p => p.id === socketId)
+    if (player) {
+      this.gameState.setPlayerInput(player.playerId, input)
+    }
+  }
 
-    this.multiplayerServer.on('customEvent', (socketId, eventName, args) => {
-      if (eventName === 'startBall') {
-        this.gameState.resetBall()
-      }
-    })
+  /**
+   * Handle custom events for Pong
+   */
+  handleCustomEvent(socketId, eventName, args, socket) {
+    if (eventName === 'startBall') {
+      this.gameState.resetBall()
+    }
   }
 
   startGameLoop() {
-    this.multiplayerServer.startGameLoop((deltaTime) => {
+    if (this.gameLoopInterval) {
+      clearInterval(this.gameLoopInterval)
+    }
+    
+    let lastTime = Date.now()
+    this.gameLoopInterval = setInterval(() => {
+      const currentTime = Date.now()
+      const deltaTime = (currentTime - lastTime) / 1000
+      lastTime = currentTime
+      
       this.gameState.update(deltaTime)
       
-      // Broadcast game state to all clients
-      this.multiplayerServer.broadcast('gameState', {
+      // Broadcast game state to all Pong players
+      this.broadcast('gameState', {
         ball: this.gameState.ball,
         player1: this.gameState.player1,
         player2: this.gameState.player2,
         players: this.gameState.players
       })
-    }, 60)
+    }, 1000 / 60) // 60 FPS
   }
 
+  /**
+   * Override getPlayerCount to use game state
+   */
   getPlayerCount() {
     return this.gameState.players.length
   }
 
+  /**
+   * Override getStatus based on players
+   */
   getStatus() {
     if (this.gameState.players.length >= this.maxPlayers) {
       return 'full'
     }
+    if (this.gameState.players.length > 0) {
+      return 'waiting'
+    }
     return 'available'
+  }
+
+  /**
+   * Stop the game loop
+   */
+  stop() {
+    if (this.gameLoopInterval) {
+      clearInterval(this.gameLoopInterval)
+      this.gameLoopInterval = null
+    }
   }
 }
 

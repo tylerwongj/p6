@@ -10,8 +10,18 @@ export class MultiplayerServer {
     this.players = new Map() // socketId -> player info
     this.callbacks = {}
     this.gameLoopInterval = null
+    this.gameRegistry = null // Optional GameRegistry for advanced routing
     
     this.setupSocketHandlers()
+  }
+
+  /**
+   * Set the GameRegistry for advanced game routing
+   * @param {GameRegistry} gameRegistry - GameRegistry instance
+   */
+  setGameRegistry(gameRegistry) {
+    this.gameRegistry = gameRegistry
+    console.log('MultiplayerServer: GameRegistry set')
   }
 
   /**

@@ -2,7 +2,7 @@ import express from 'express'
 import { createServer } from 'http'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { MultiplayerServer } from '@tyler-arcade/multiplayer'
+import { MultiplayerServer, GameRegistry } from '@tyler-arcade/multiplayer'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename)
 const app = express()
 const server = createServer(app)
 const multiplayerServer = new MultiplayerServer(server)
+const gameRegistry = new GameRegistry(multiplayerServer)
 
 const PORT = process.env.PORT || 3000
 
@@ -17,16 +18,13 @@ const PORT = process.env.PORT || 3000
 app.use(express.static('public'))
 app.use('/node_modules', express.static('node_modules'))
 
-// Game state management
-const games = new Map()
-
 // Initialize Pong game
 console.log('Attempting to import Pong game...')
 import('./games/pong/pong-game.js').then(({ PongGame }) => {
   console.log('PongGame imported successfully')
-  const pongGame = new PongGame(multiplayerServer)
-  games.set('pong', pongGame)
-  console.log('Pong game initialized, players:', pongGame.getPlayerCount())
+  const pongGame = new PongGame()
+  gameRegistry.registerGame('pong', pongGame)
+  console.log('Pong game registered with GameRegistry, players:', pongGame.getPlayerCount())
 }).catch(error => {
   console.error('Failed to import PongGame:', error)
 })
@@ -46,18 +44,7 @@ app.get('/pong', (req, res) => {
 
 // API Routes
 app.get('/api/games', (req, res) => {
-  const gameList = Array.from(games.keys()).map(gameId => {
-    const game = games.get(gameId)
-    return {
-      id: gameId,
-      name: game.name || gameId,
-      description: game.description || `Play ${gameId}`,
-      players: game.getPlayerCount ? game.getPlayerCount() : 0,
-      maxPlayers: game.maxPlayers || 2,
-      status: game.status || 'available'
-    }
-  })
-  
+  const gameList = gameRegistry.getAllGameStatus()
   res.json(gameList)
 })
 
