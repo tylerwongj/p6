@@ -68,7 +68,10 @@ function setupSocketEvents() {
 }
 
 function setupInputHandling() {
-    // Send input to server continuously
+    // Send input to server only when keys change (not continuously)
+    let lastInput = { up: false, down: false, left: false, right: false }
+    
+    // Check for input changes more frequently
     setInterval(() => {
         if (socket && playerId) {
             const input = inputManager.getInputState()
@@ -81,9 +84,13 @@ function setupInputHandling() {
                 right: inputManager.isKeyPressed('d') || inputManager.isKeyPressed('arrowright')
             }
             
-            socket.emit('playerInput', snakeInput)
+            // Only send if input changed
+            if (JSON.stringify(snakeInput) !== JSON.stringify(lastInput)) {
+                socket.emit('playerInput', snakeInput)
+                lastInput = { ...snakeInput }
+            }
         }
-    }, 50) // Send input 20 times per second
+    }, 50) // Check input 20 times per second
     
     // Handle reset key
     inputManager.onKeyPress('r', () => {
@@ -103,20 +110,16 @@ function hideJoinOverlay() {
 }
 
 function joinGame() {
-    const name = playerNameInput.value.trim()
-    if (name) {
-        playerName = name
-        socket.emit('joinGame', { name: playerName, roomId: 'snake' })
-    } else {
-        alert('Please enter a name')
+    let name = playerNameInput.value.trim()
+    
+    // Auto-generate name if empty
+    if (!name) {
+        const guestNames = ['SnakeCharmer', 'Viper', 'Cobra', 'Python', 'Serpent', 'Adder', 'Mamba', 'Boa']
+        name = guestNames[Math.floor(Math.random() * guestNames.length)] + Math.floor(Math.random() * 100)
     }
-}
-
-function joinAsGuest() {
-    const guestNames = ['SnakeCharmer', 'Viper', 'Cobra', 'Python', 'Serpent', 'Adder', 'Mamba', 'Boa']
-    const randomName = guestNames[Math.floor(Math.random() * guestNames.length)] + Math.floor(Math.random() * 100)
-    playerNameInput.value = randomName
-    joinGame()
+    
+    playerName = name
+    socket.emit('joinGame', { name: playerName, roomId: 'snake' })
 }
 
 function updateUI() {
