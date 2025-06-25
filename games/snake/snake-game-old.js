@@ -2,7 +2,7 @@ import { CollisionDetection } from '@tyler-arcade/2d-physics'
 import { BaseGame } from '@tyler-arcade/multiplayer'
 
 /**
- * SnakeGame - Simplified multiplayer Snake game
+ * SnakeGame - Multiplayer Snake game for hub integration
  */
 export class SnakeGame extends BaseGame {
   constructor() {
@@ -35,13 +35,19 @@ export class SnakeGame extends BaseGame {
     if (this.gameState.players.length < this.maxPlayers) {
       const playerId = this.gameState.players.length + 1
       const colors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44']
+      const startPositions = [
+        {x: 100, y: 100},
+        {x: 300, y: 100}, 
+        {x: 100, y: 200},
+        {x: 300, y: 200}
+      ]
       
       const player = {
         id: socketId,
         name: playerName,
         playerId: playerId,
         color: colors[playerId - 1],
-        snake: this.gameState.createSnake(playerId),
+        snake: this.gameState.createSnake(startPositions[playerId - 1]),
         alive: true,
         score: 0
       }
@@ -91,7 +97,7 @@ export class SnakeGame extends BaseGame {
   handlePlayerInput(socketId, input, socket) {
     const player = this.gameState.players.find(p => p.id === socketId)
     if (player && player.alive) {
-      this.gameState.setPlayerDirection(player.playerId, input)
+      this.gameState.setPlayerInput(player.playerId, input)
     }
   }
 
@@ -99,9 +105,7 @@ export class SnakeGame extends BaseGame {
    * Handle custom events for Snake
    */
   handleCustomEvent(socketId, eventName, args, socket) {
-    console.log(`SnakeGame: Received custom event '${eventName}' from ${socketId}`)
     if (eventName === 'resetGame') {
-      console.log('SnakeGame: Resetting game!')
       this.gameState.resetGame()
     }
   }
@@ -133,7 +137,7 @@ export class SnakeGame extends BaseGame {
         food: this.gameState.food,
         gameStatus: this.gameState.gameStatus
       })
-    }, 1000 / 10) // 10 FPS for Snake
+    }, 1000 / 10) // 10 FPS for Snake (slower than Pong)
   }
 
   /**
@@ -141,6 +145,19 @@ export class SnakeGame extends BaseGame {
    */
   getPlayerCount() {
     return this.gameState.players.length
+  }
+
+  /**
+   * Override getStatus based on players
+   */
+  getStatus() {
+    if (this.gameState.players.length >= this.maxPlayers) {
+      return 'full'
+    }
+    if (this.gameState.players.length > 0) {
+      return 'waiting'
+    }
+    return 'available'
   }
 
   /**
@@ -154,7 +171,7 @@ export class SnakeGame extends BaseGame {
   }
 }
 
-// Simple Snake game state class
+// Snake game state class
 class SnakeGameState {
   constructor() {
     this.players = []
@@ -164,20 +181,10 @@ class SnakeGameState {
     this.canvasWidth = 400
     this.canvasHeight = 300
     this.moveTimer = 0
-    this.moveInterval = 0.3 // Move every 300ms (slower)
+    this.moveInterval = 0.2 // Move every 200ms
   }
 
-  createSnake(playerId) {
-    // Grid-aligned starting positions
-    const startPositions = [
-      {x: 100, y: 100}, // Player 1
-      {x: 300, y: 100}, // Player 2
-      {x: 100, y: 200}, // Player 3
-      {x: 300, y: 200}  // Player 4
-    ]
-    
-    const startPos = startPositions[playerId - 1] || startPositions[0]
-    
+  createSnake(startPos) {
     return {
       body: [
         { x: startPos.x, y: startPos.y },
@@ -202,7 +209,7 @@ class SnakeGameState {
   update(deltaTime) {
     if (this.players.length === 0) return
     
-    // Start game if we have players
+    // Start game if we have players and not already playing
     if (this.gameStatus === 'waiting' && this.players.length > 0) {
       this.gameStatus = 'playing'
     }
@@ -214,6 +221,7 @@ class SnakeGameState {
     if (this.moveTimer >= this.moveInterval) {
       this.moveTimer = 0
       this.moveSnakes()
+      this.checkFoodCollision() // Check food BEFORE removing tails
       this.checkCollisions()
     }
   }
@@ -237,19 +245,8 @@ class SnakeGameState {
       // Add new head
       snake.body.unshift(newHead)
       
-      // Check if snake ate food
-      let ateFood = false
-      if (newHead.x === this.food.x && newHead.y === this.food.y) {
-        ateFood = true
-        player.score += 10
-        this.food = this.generateFood()
-        console.log(`${player.name} ate food! Score: ${player.score}`)
-      }
-      
-      // Remove tail only if didn't eat food
-      if (!ateFood) {
-        snake.body.pop()
-      }
+      // Mark that tail needs to be removed (food collision will override this)
+      snake.shouldRemoveTail = true
     })
   }
 
@@ -290,7 +287,7 @@ class SnakeGameState {
       })
     })
     
-    // Check if game should end and auto-restart
+    // Check if game should end
     const alivePlayers = this.players.filter(p => p.alive)
     if (alivePlayers.length <= 1 && this.players.length > 1 && this.gameStatus !== 'ended') {
       this.gameStatus = 'ended'
@@ -305,7 +302,41 @@ class SnakeGameState {
     }
   }
 
-  setPlayerDirection(playerId, input) {
+  checkFoodCollision() {
+    this.players.forEach(player => {
+      if (!player.alive) return
+      
+      const snake = player.snake
+      const head = snake.body[0]
+      
+      console.log(`Checking collision: head(${head.x},${head.y}) vs food(${this.food.x},${this.food.y})`)
+      
+      if (head.x === this.food.x && head.y === this.food.y) {
+        // Snake ate food - don't remove tail (snake grows)
+        snake.shouldRemoveTail = false
+        
+        // Increase score
+        player.score += 10
+        
+        // Generate new food
+        this.food = this.generateFood()
+        
+        console.log(`${player.name} ate food! Score: ${player.score}`)
+      }
+    })
+    
+    // Remove tails for snakes that didn't eat food
+    this.players.forEach(player => {
+      if (!player.alive) return
+      
+      const snake = player.snake
+      if (snake.shouldRemoveTail) {
+        snake.body.pop()
+      }
+    })
+  }
+
+  setPlayerInput(playerId, input) {
     const player = this.players.find(p => p.playerId === playerId)
     if (!player || !player.alive) return
     
@@ -325,17 +356,20 @@ class SnakeGameState {
   }
 
   resetGame() {
-    console.log('Resetting Snake game...')
+    const startPositions = [
+      {x: 100, y: 100},
+      {x: 300, y: 100}, 
+      {x: 100, y: 200},
+      {x: 300, y: 200}
+    ]
     
     this.players.forEach((player, index) => {
       player.alive = true
       player.score = 0
-      player.snake = this.createSnake(player.playerId)
+      player.snake = this.createSnake(startPositions[index] || startPositions[0])
     })
-    
     this.food = this.generateFood()
-    this.gameStatus = 'playing'
-    
-    console.log('Snake game reset complete!')
+    this.gameStatus = 'playing' // Start playing immediately after reset
+    console.log('Snake game reset!')
   }
 }

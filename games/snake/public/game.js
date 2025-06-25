@@ -93,8 +93,10 @@ function setupInputHandling() {
     }, 50) // Check input 20 times per second
     
     // Handle reset key
-    inputManager.onKeyPress('0', () => {
-        if (socket && playerId) {
+    inputManager.on('keydown', (e, key) => {
+        if (key === '0' && socket && playerId) {
+            e.preventDefault()
+            console.log('Snake: Sending resetGame event')
             socket.emit('resetGame')
         }
     })
