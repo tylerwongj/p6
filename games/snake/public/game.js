@@ -93,7 +93,7 @@ function setupInputHandling() {
     }, 50) // Check input 20 times per second
     
     // Handle reset key
-    inputManager.onKeyPress('r', () => {
+    inputManager.onKeyPress('0', () => {
         if (socket && playerId) {
             socket.emit('resetGame')
         }
