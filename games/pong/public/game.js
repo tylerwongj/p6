@@ -47,9 +47,9 @@ class PongGame {
   }
 
   setupInput() {
-    // Handle space key for starting ball
+    // Handle 0 key for starting ball
     this.input.on('keydown', (e, key) => {
-      if (key === ' ') {
+      if (key === '0') {
         e.preventDefault()
         this.socket.emit('startBall')
       }
