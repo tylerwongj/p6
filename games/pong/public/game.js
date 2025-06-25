@@ -131,12 +131,12 @@ window.joinGame = function() {
   const nameInput = document.getElementById('playerName')
   const name = nameInput.value.trim() || generateRandomName()
   
-  window.game.socket.emit('joinGame', { name })
+  window.game.socket.emit('joinGame', { name, roomId: 'pong' })
 }
 
 window.joinWithRandomName = function() {
   const name = generateRandomName()
-  window.game.socket.emit('joinGame', { name })
+  window.game.socket.emit('joinGame', { name, roomId: 'pong' })
 }
 
 function generateRandomName() {

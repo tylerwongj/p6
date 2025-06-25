@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tyler Arcade - Game Hub</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 50%, #0c0c0c 100%);
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .hub-container {
+            max-width: 800px;
+            width: 90%;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .logo {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #888;
+            margin-bottom: 3rem;
+        }
+        
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 3rem;
+        }
+        
+        .game-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-card:hover {
+            transform: translateY(-5px);
+            border-color: #00ff88;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.2);
+        }
+        
+        .game-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #00ccff;
+        }
+        
+        .game-description {
+            color: #ccc;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        
+        .game-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .players-count {
+            color: #00ff88;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .status-available {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+        
+        .status-full {
+            background: rgba(255, 136, 0, 0.2);
+            color: #ff8800;
+        }
+        
+        .loading {
+            color: #888;
+            font-style: italic;
+        }
+        
+        .footer {
+            color: #555;
+            font-size: 0.9rem;
+            margin-top: 2rem;
+        }
+        
+        @media (max-width: 600px) {
+            .logo {
+                font-size: 2.5rem;
+            }
+            
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hub-container">
+        <h1 class="logo">Tyler Arcade</h1>
+        <p class="subtitle">Multiplayer Game Hub</p>
+        
+        <div id="games-grid" class="games-grid">
+            <div class="loading">Loading games...</div>
+        </div>
+        
+        <div class="footer">
+            <p>Select a game to start playing. All games support real-time multiplayer!</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
