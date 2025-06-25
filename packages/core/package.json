@@ -1,0 +1,18 @@
+{
+  "name": "@tyler-arcade/core",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Core game engine components for Tyler's arcade games",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./GameLoop": "./src/GameLoop.js",
+    "./Canvas2D": "./src/Canvas2D.js",
+    "./EventBus": "./src/EventBus.js"
+  },
+  "scripts": {
+    "test": "echo 'Core package tests'"
+  },
+  "keywords": ["game", "engine", "2d", "arcade"],
+  "author": "Tyler"
+}
