@@ -20,6 +20,7 @@
     "@tyler-arcade/2d-input": "file:packages/2d-input",
     "@tyler-arcade/2d-physics": "file:packages/2d-physics",
     "@tyler-arcade/multiplayer": "file:packages/multiplayer",
+    "@tyler-arcade/ui-components": "file:packages/ui-components",
     "express": "^4.18.0"
   },
   "devDependencies": {},

@@ -1,0 +1,7 @@
+{
+  "name": "@tyler-arcade/ui-components",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Shared UI components for Tyler Arcade games",
+  "main": "src/index.js"
+}
