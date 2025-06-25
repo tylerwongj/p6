@@ -122,6 +122,9 @@ function joinGame() {
     socket.emit('joinGame', { name: playerName, roomId: 'snake' })
 }
 
+// Make functions globally available
+window.joinGame = joinGame
+
 function updateUI() {
     if (!gameState) return
     
