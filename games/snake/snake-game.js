@@ -221,8 +221,8 @@ class SnakeGameState {
     if (this.moveTimer >= this.moveInterval) {
       this.moveTimer = 0
       this.moveSnakes()
+      this.checkFoodCollision() // Check food BEFORE removing tails
       this.checkCollisions()
-      this.checkFoodCollision()
     }
   }
 
@@ -245,8 +245,8 @@ class SnakeGameState {
       // Add new head
       snake.body.unshift(newHead)
       
-      // Remove tail (will be added back if food eaten)
-      snake.body.pop()
+      // Mark that tail needs to be removed (food collision will override this)
+      snake.shouldRemoveTail = true
     })
   }
 
@@ -303,9 +303,8 @@ class SnakeGameState {
       const head = snake.body[0]
       
       if (head.x === this.food.x && head.y === this.food.y) {
-        // Grow snake
-        const tail = snake.body[snake.body.length - 1]
-        snake.body.push({ ...tail })
+        // Snake ate food - don't remove tail (snake grows)
+        snake.shouldRemoveTail = false
         
         // Increase score
         player.score += 10
@@ -314,6 +313,16 @@ class SnakeGameState {
         this.food = this.generateFood()
         
         console.log(`${player.name} ate food! Score: ${player.score}`)
+      }
+    })
+    
+    // Remove tails for snakes that didn't eat food
+    this.players.forEach(player => {
+      if (!player.alive) return
+      
+      const snake = player.snake
+      if (snake.shouldRemoveTail) {
+        snake.body.pop()
       }
     })
   }
