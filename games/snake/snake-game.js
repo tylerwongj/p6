@@ -185,7 +185,7 @@ class SnakeGameState {
         { x: startPos.x - this.gridSize * 2, y: startPos.y }
       ],
       direction: { x: 1, y: 0 }, // Moving right initially
-      nextDirection: { x: 1, y: 0 }
+      directionQueue: [] // Queue to store rapid direction changes
     }
   }
 
@@ -224,8 +224,11 @@ class SnakeGameState {
       
       const snake = player.snake
       
-      // Update direction
-      snake.direction = { ...snake.nextDirection }
+      // Process next direction from queue if available
+      if (snake.directionQueue.length > 0) {
+        const nextDir = snake.directionQueue.shift() // Remove first direction from queue
+        snake.direction = nextDir
+      }
       
       // Calculate new head position
       const head = snake.body[0]
@@ -310,17 +313,35 @@ class SnakeGameState {
     if (!player || !player.alive) return
     
     const snake = player.snake
-    const currentDir = snake.direction
     
-    // Prevent moving backwards
-    if (input.up && currentDir.y === 0) {
-      snake.nextDirection = { x: 0, y: -1 }
-    } else if (input.down && currentDir.y === 0) {
-      snake.nextDirection = { x: 0, y: 1 }
-    } else if (input.left && currentDir.x === 0) {
-      snake.nextDirection = { x: -1, y: 0 }
-    } else if (input.right && currentDir.x === 0) {
-      snake.nextDirection = { x: 1, y: 0 }
+    // Get the last direction in queue, or current direction if queue is empty
+    const lastDir = snake.directionQueue.length > 0 
+      ? snake.directionQueue[snake.directionQueue.length - 1] 
+      : snake.direction
+    
+    let newDirection = null
+    
+    // Prevent moving backwards relative to the last direction
+    if (input.up && lastDir.y === 0) {
+      newDirection = { x: 0, y: -1 }
+    } else if (input.down && lastDir.y === 0) {
+      newDirection = { x: 0, y: 1 }
+    } else if (input.left && lastDir.x === 0) {
+      newDirection = { x: -1, y: 0 }
+    } else if (input.right && lastDir.x === 0) {
+      newDirection = { x: 1, y: 0 }
+    }
+    
+    // Add to queue if it's a valid new direction and not the same as the last queued direction
+    if (newDirection && 
+        (snake.directionQueue.length === 0 || 
+         (lastDir.x !== newDirection.x || lastDir.y !== newDirection.y))) {
+      
+      // Limit queue size to prevent spam (max 3 directions ahead)
+      if (snake.directionQueue.length < 3) {
+        snake.directionQueue.push(newDirection)
+        console.log(`${player.name} queued direction: ${newDirection.x},${newDirection.y}. Queue length: ${snake.directionQueue.length}`)
+      }
     }
   }
 
@@ -331,6 +352,8 @@ class SnakeGameState {
       player.alive = true
       player.score = 0
       player.snake = this.createSnake(player.playerId)
+      // Clear any queued directions
+      player.snake.directionQueue = []
     })
     
     this.food = this.generateFood()
