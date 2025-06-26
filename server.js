@@ -54,6 +54,13 @@ async function loadAllGames() {
           if (GameClass) {
             console.log(`${gameDir} GameClass imported successfully`)
             const gameInstance = new GameClass()
+            
+            // Set multiplayer server reference so game can broadcast
+            if (gameInstance.setMultiplayerServer) {
+              gameInstance.setMultiplayerServer(multiplayerServer)
+              console.log(`${gameDir} multiplayer server reference set`)
+            }
+            
             gameRegistry.registerGame(gameDir, gameInstance)
             console.log(`${gameDir} game registered with GameRegistry, players:`, gameInstance.getPlayerCount())
             

@@ -1,8 +1,5 @@
-import { InputManager } from '/node_modules/@tyler-arcade/2d-input/src/index.js'
-
 // Game state
 let socket
-let inputManager
 let playerId = null
 let playerName = null
 let gameState = null
@@ -22,10 +19,6 @@ function init() {
     console.log('Initializing Snake game...')
     
     try {
-        // Initialize input manager
-        inputManager = new InputManager()
-        console.log('InputManager created successfully')
-        
         // Connect to server
         socket = io()
         console.log('Socket.io connection initiated')
@@ -93,20 +86,34 @@ function setupSocketEvents() {
 }
 
 function setupInputHandling() {
-    // Send input to server only when keys change (not continuously)
+    // Track key states
+    const keys = {}
     let lastInput = { up: false, down: false, left: false, right: false }
     
-    // Check for input changes more frequently
+    // Key event listeners
+    document.addEventListener('keydown', (e) => {
+        keys[e.code.toLowerCase()] = true
+        
+        // Handle reset key
+        if (e.code === 'Digit0' && socket && playerId) {
+            e.preventDefault()
+            console.log('Snake: Sending resetGame event')
+            socket.emit('resetGame')
+        }
+    })
+    
+    document.addEventListener('keyup', (e) => {
+        keys[e.code.toLowerCase()] = false
+    })
+    
+    // Send input to server only when keys change
     setInterval(() => {
         if (socket && playerId) {
-            const input = inputManager.getInputState()
-            
-            // Add WASD support for Snake
             const snakeInput = {
-                up: input.up || inputManager.isKeyPressed('w'),
-                down: input.down || inputManager.isKeyPressed('s'),
-                left: inputManager.isKeyPressed('a') || inputManager.isKeyPressed('arrowleft'),
-                right: inputManager.isKeyPressed('d') || inputManager.isKeyPressed('arrowright')
+                up: keys['arrowup'] || keys['keyw'],
+                down: keys['arrowdown'] || keys['keys'],
+                left: keys['arrowleft'] || keys['keya'], 
+                right: keys['arrowright'] || keys['keyd']
             }
             
             // Only send if input changed
@@ -116,15 +123,6 @@ function setupInputHandling() {
             }
         }
     }, 50) // Check input 20 times per second
-    
-    // Handle reset key
-    inputManager.on('keydown', (e, key) => {
-        if (key === '0' && socket && playerId) {
-            e.preventDefault()
-            console.log('Snake: Sending resetGame event')
-            socket.emit('resetGame')
-        }
-    })
 }
 
 function showJoinOverlay() {

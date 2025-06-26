@@ -11,11 +11,9 @@ export class SnakeGame extends BaseGame {
     this.description = 'Classic snake game - eat food, grow longer, avoid walls!'
     this.maxPlayers = 4
     this.gameState = new SnakeGameState()
-    this.gameLoopInterval = null
     this.multiplayerServer = null // Will be set by server
-    
-    // Start game loop immediately
-    this.startGameLoop()
+    this.lastUpdateTime = 0
+    this.updateInterval = 1000 / 10 // 10 FPS for Snake movement
   }
   
   /**
@@ -23,6 +21,7 @@ export class SnakeGame extends BaseGame {
    */
   setMultiplayerServer(server) {
     this.multiplayerServer = server
+    console.log('SnakeGame: Multiplayer server reference set')
   }
 
   /**
@@ -149,17 +148,15 @@ export class SnakeGame extends BaseGame {
     }
   }
 
-  startGameLoop() {
-    if (this.gameLoopInterval) {
-      clearInterval(this.gameLoopInterval)
-    }
+  /**
+   * Update method called by unified server's game loop (60 FPS)
+   * We throttle to 10 FPS for Snake movement
+   */
+  update(deltaTime) {
+    this.lastUpdateTime += deltaTime * 1000 // Convert to milliseconds
     
-    let lastTime = Date.now()
-    this.gameLoopInterval = setInterval(() => {
-      const currentTime = Date.now()
-      const deltaTime = (currentTime - lastTime) / 1000
-      lastTime = currentTime
-      
+    if (this.lastUpdateTime >= this.updateInterval) {
+      this.lastUpdateTime = 0
       this.gameState.update(deltaTime)
       
       // Broadcast game state to all Snake players
@@ -178,7 +175,7 @@ export class SnakeGame extends BaseGame {
           gameStatus: this.gameState.gameStatus
         })
       }
-    }, 1000 / 10) // 10 FPS for Snake
+    }
   }
 
   /**
@@ -189,13 +186,12 @@ export class SnakeGame extends BaseGame {
   }
 
   /**
-   * Stop the game loop
+   * Stop the game - cleanup method
    */
   stop() {
-    if (this.gameLoopInterval) {
-      clearInterval(this.gameLoopInterval)
-      this.gameLoopInterval = null
-    }
+    console.log('SnakeGame: Stopping game')
+    this.gameState.players = []
+    this.players = []
   }
 }
 
