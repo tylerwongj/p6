@@ -57,7 +57,14 @@ function setupEventListeners() {
   document.getElementById('gameBoard').addEventListener('click', (e) => {
     if (e.target.classList.contains('cell')) {
       const position = parseInt(e.target.dataset.position)
-      makeMove(position)
+      console.log('Cell clicked:', e.target, 'position:', position, 'dataset:', e.target.dataset)
+      
+      // Validate position
+      if (!isNaN(position) && position >= 0 && position <= 8) {
+        makeMove(position)
+      } else {
+        console.warn('Invalid position clicked:', position)
+      }
     }
   })
 
@@ -99,7 +106,16 @@ function joinGame() {
 }
 
 function makeMove(position) {
-  if (!gameState || !socket || !playerId) return
+  if (!gameState || !socket || !playerId) {
+    console.warn('Cannot make move - missing:', { gameState: !!gameState, socket: !!socket, playerId })
+    return
+  }
+  
+  // Additional validation
+  if (typeof position !== 'number' || position < 0 || position > 8) {
+    console.warn('Invalid position for move:', position)
+    return
+  }
   
   console.log('Making move at position:', position)
   socket.emit('playerMove', { position })

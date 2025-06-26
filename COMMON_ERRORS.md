@@ -682,4 +682,62 @@ multiplayerServer.on('gameAction', (socketId, action, socket) => {
 })
 ```
 
-*Last updated: Session fixing dice games (Yatzy, Yams, Yahtzee, Yacht Dice) + Package imports + Event patterns + Standard multiplayer framework compliance*
+### Error: Top-Left Grid Cell Not Clickable / Undefined Position
+**Problem:** First cell (position 0) in game grids doesn't respond to clicks or sends undefined position
+**Symptoms:**
+- Top-left cell appears unresponsive
+- Server logs show "position: undefined" for some clicks
+- parseInt() returns NaN for missing data attributes
+
+**Fix:**
+```javascript
+// ✅ Add position validation in click handlers
+document.getElementById('gameBoard').addEventListener('click', (e) => {
+  if (e.target.classList.contains('cell')) {
+    const position = parseInt(e.target.dataset.position)
+    console.log('Cell clicked:', e.target, 'position:', position)
+    
+    // Validate position before sending
+    if (!isNaN(position) && position >= 0 && position <= 8) {
+      makeMove(position)
+    } else {
+      console.warn('Invalid position clicked:', position)
+    }
+  }
+})
+
+// ✅ Server-side position validation
+function makeMove(position) {
+  if (typeof position !== 'number' || position < 0 || position > 8) {
+    console.warn('Invalid position for move:', position)
+    return
+  }
+  // ... rest of function
+}
+```
+
+## 📁 Folder Structure for Game Development
+
+### Directory Organization
+```
+/games/                    # ✅ Working games loaded by unified server
+  ├── pong/               # ✅ Fully functional
+  ├── snake/              # ✅ Fully functional  
+  └── tic-tac-toe/        # ✅ Fully functional
+
+/games-tested/             # ❌ Games that don't work properly (gitignored)
+  └── tetris/             # ❌ Has issues, moved here
+
+/games-not-yet-tested/     # 🔄 Games in development (gitignored)
+  ├── 20-questions/
+  ├── baccarat/
+  └── ... (200+ games)
+```
+
+### Workflow
+1. **Develop games** in `/games-not-yet-tested/`
+2. **Test and fix** until fully working
+3. **Move to `/games/`** when ready (auto-loaded by unified server)
+4. **Move to `/games-tested/`** if broken/problematic
+
+*Last updated: Session creating unified server architecture + Converting games to BaseGame pattern + Fixing grid click validation + Adding games-tested folder structure*
