@@ -13,7 +13,7 @@ export class SnakeGame extends BaseGame {
     this.gameState = new SnakeGameState()
     this.multiplayerServer = null // Will be set by server
     this.lastUpdateTime = 0
-    this.updateInterval = 1000 / 10 // 10 FPS for Snake movement
+    this.updateInterval = 1000 / 16.5 // 16.5 FPS for Snake movement (10% faster than 15)
   }
   
   /**
@@ -204,29 +204,48 @@ class SnakeGameState {
     this.canvasWidth = 400
     this.canvasHeight = 300
     this.moveTimer = 0
-    this.moveInterval = 0.3 // Move every 300ms (slower)
+    this.moveInterval = 1000 / 16.5 / 1000 // Move at 16.5 FPS (~61ms)
     this.maxDirectionQueue = 2 // Configurable: can be set to 2 or 3
     this.food = this.generateFood() // Generate food after other properties are set
   }
 
   createSnake(playerId) {
-    // Grid-aligned starting positions
+    // Grid-aligned starting positions with offset for right-side snakes
     const startPositions = [
-      {x: 100, y: 100}, // Player 1
-      {x: 300, y: 100}, // Player 2
-      {x: 100, y: 200}, // Player 3
-      {x: 300, y: 200}  // Player 4
+      {x: 100, y: 100}, // Player 1 - left side, top
+      {x: 300, y: 120}, // Player 2 - right side, slightly lower
+      {x: 100, y: 200}, // Player 3 - left side, bottom
+      {x: 300, y: 220}  // Player 4 - right side, slightly lower
     ]
     
     const startPos = startPositions[playerId - 1] || startPositions[0]
     
-    return {
-      body: [
+    // Right-side players (2 & 4) start facing left, left-side players (1 & 3) face right
+    const isRightSide = playerId === 2 || playerId === 4
+    
+    let body, direction
+    
+    if (isRightSide) {
+      // Right-side snakes: head on left, body extends right, moving left
+      body = [
+        { x: startPos.x, y: startPos.y },
+        { x: startPos.x + this.gridSize, y: startPos.y },
+        { x: startPos.x + this.gridSize * 2, y: startPos.y }
+      ]
+      direction = { x: -1, y: 0 } // Moving left
+    } else {
+      // Left-side snakes: head on right, body extends left, moving right
+      body = [
         { x: startPos.x, y: startPos.y },
         { x: startPos.x - this.gridSize, y: startPos.y },
         { x: startPos.x - this.gridSize * 2, y: startPos.y }
-      ],
-      direction: { x: 1, y: 0 }, // Moving right initially
+      ]
+      direction = { x: 1, y: 0 } // Moving right
+    }
+    
+    return {
+      body: body,
+      direction: direction,
       directionQueue: [] // Queue to store rapid direction changes
     }
   }
