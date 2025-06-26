@@ -4,38 +4,48 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-### Development
+### Production Commands
 ```bash
-# Start unified server (loads all working games)
+# Start unified server (loads all 3 working games)
 npm start
-
-# Start individual game (legacy - use unified server instead)
-cd games/[game-name] && npm start
+# → Serves: http://localhost:3000 (hub), /pong, /snake, /tic-tac-toe
 
 # Install all workspace dependencies
 npm run install-all
 
-# Run tests across all workspaces
+# Run tests across all workspaces  
 npm run test
 
 # Build all workspaces
 npm run build
 ```
 
-### Game Development Workflow
+### Development Commands
 ```bash
-# Create new game in development folder
-cd games-not-yet-tested/[new-game]
+# Create new game in development
+mkdir games-not-yet-tested/new-game
 
-# Test and develop until working
-npm start  # Runs on individual port
+# Develop individual game (any port)
+cd games-not-yet-tested/new-game && npm start
 
-# Move to active games when fully functional
-mv games-not-yet-tested/[game] games/
+# Move working game to production (auto-loaded)
+mv games-not-yet-tested/game games/
 
-# Move problematic games to tested folder
-mv games/[broken-game] games-tested/
+# Move broken game to tested folder
+mv games/broken-game games-tested/
 ```
+
+## Current Status
+
+### Working Games (3) ✅
+- **Pong**: Real-time multiplayer paddle game with physics
+- **Snake**: Multiplayer snake with direction queue and food generation  
+- **Tic-tac-toe**: Turn-based strategy with spectator support
+
+### Folder Organization
+- `/games/` - Production games (auto-loaded by unified server)
+- `/games-tested/` - Broken games (tetris moved here)
+- `/games-not-yet-tested/` - 200+ games in development
 
 ## Architecture
 

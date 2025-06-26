@@ -11,283 +11,155 @@
 
 ## 🏗️ Architecture Philosophy
 
-**Working Game First → Extract Packages → Individual Repos**
-- Build games that work in monorepo
-- Extract proven, working code into packages  
-- Test each extraction step
-- Migrate to individual game repos when mature
-- No guessing if architecture works
+**Working Game First → Extract Packages → Unified Server**
+- Build games that work individually
+- Extract proven, working code into shared packages  
+- Integrate into unified server architecture when stable
+- No guessing if architecture works - validate with real implementations
 
-## 📊 Repository Evolution Strategy
+## 📊 Current Architecture (Phase 2 Complete)
 
-### Phase 1: Monorepo Development (Current)
+### Unified Server System ✅
 ```
 tyler-arcade/
-├── packages/          # @tyler-arcade/* packages  
-├── games/            # All games together
-│   ├── pong/
-│   ├── snake/
-│   └── future games/
-├── public/           # Main hub + shared assets
-│   ├── index.html   # Game selection menu
-│   ├── games/       # Game-specific assets
-│   └── shared/      # Common UI/CSS
-└── server.js        # Single server with routing
+├── server.js                    # Unified server with auto-discovery
+├── packages/                    # @tyler-arcade/* packages  
+│   ├── core/                   # GameLoop, Canvas2D, EventBus
+│   ├── 2d-input/               # Input handling
+│   ├── 2d-physics/             # Collision detection  
+│   ├── multiplayer/            # BaseGame, GameRegistry, MultiplayerServer
+│   └── ui-components/          # Shared UI components
+├── games/                      # ✅ Working games (auto-loaded)
+│   ├── pong/                   # BaseGame implementation
+│   ├── snake/                  # BaseGame implementation
+│   └── tic-tac-toe/           # BaseGame implementation
+├── games-tested/               # ❌ Problematic games (gitignored)
+│   └── tetris/                 # Moved here due to issues
+├── games-not-yet-tested/       # 🔄 200+ games in development (gitignored)
+└── public/                     # Game hub interface
 ```
 
-**Benefits:** Easy development, package sharing, unified testing
+### Key Components ✅
+1. **Auto-Discovery Server**: Scans `/games` and loads BaseGame implementations
+2. **GameRegistry**: Routes events to correct games, prevents conflicts  
+3. **Room-based Multiplayer**: Each game isolated in Socket.io rooms
+4. **BaseGame Pattern**: Consistent API for all games
+5. **Package System**: Shared `@tyler-arcade/*` packages
 
-### Phase 2: Package Stabilization
-- Publish `@tyler-arcade/*` packages to npm
-- Battle-test packages across multiple games
-- Establish stable APIs and documentation
+### Benefits Achieved
+- **Single Command Start**: `npm start` loads all working games
+- **Hot Game Addition**: Move games to `/games` folder to enable
+- **Conflict Prevention**: No more port conflicts or event handler issues
+- **Shared Resources**: Unified game loop, shared packages, single Socket.io instance
 
-### Phase 3: Game Extraction (Future)
-```
-@tyler-arcade/core     → npm package
-@tyler-arcade/2d-input → npm package  
-@tyler-arcade/physics  → npm package
+## 🔄 Development Workflow (Implemented)
 
-tyler-pong            → github.com/tyler/tyler-pong
-tyler-snake           → github.com/tyler/tyler-snake  
-tyler-wordle          → github.com/tyler/tyler-wordle
-tyler-tic-tac-toe     → github.com/tyler/tyler-tic-tac-toe
-
-tyler-game-hub        → github.com/tyler/tyler-game-hub
-                        ↳ Links to all deployed games
-```
-
-**When to extract:** After 3-4 working games, when packages are stable
-
-**Migration process:**
-1. Publish packages to npm
-2. Move each game to separate repo  
-3. Update games to use published packages
-4. Deploy each game to separate Railway instance
-5. Create lightweight hub that links to deployed games
-
-**Benefits of individual repos:**
-- Independent development cycles
-- Separate contributors per game
-- Game-specific documentation
-- Independent versioning and deployment
-- No single point of failure
-
-## ✅ Current Status (Phase 1 Complete)
-
-### What We Built
-1. **Clean p6 workspace** - npm workspaces setup
-2. **@tyler-arcade/core package** - minimal but functional
-   - `GameLoop`: requestAnimationFrame-based game loop
-   - `Canvas2D`: Simple 2D rendering wrapper
-   - `EventBus`: Pub/sub event system
-3. **Working Pong game** - real multiplayer using core package
-4. **Validated approach** - core package works in real game
-
-### Pong Game Features
-- ✅ Real-time multiplayer with Socket.io
-- ✅ Spectator mode for newcomers  
-- ✅ Random name generation (RedKnight, StinkyExplorer, etc.)
-- ✅ Mobile-friendly popup UI overlay
-- ✅ Dark theme by default
-- ✅ Players see game immediately, popup to join
-- ✅ No room codes needed - join main room
-- ✅ 60 FPS smooth gameplay
-- ✅ Controls: W/S or Arrow Keys, Space to start ball
-
-## 🔄 Next Phase: Incremental Package Extraction
-
-Extract packages one at a time from working Pong game:
-
-### Phase 2A: @tyler-arcade/2d-input
-Extract input handling from Pong:
-- Unified keyboard/mouse/touch/gamepad input
-- Virtual joystick for mobile
-- Key bindings system
-- **Test**: Verify Pong still works with package
-
-### Phase 2B: @tyler-arcade/2d-physics  
-Extract collision/movement from Pong:
-- Vector2D math utilities
-- Rectangle/Circle collision shapes
-- Collision detection algorithms
-- Simple physics simulation
-- **Test**: Verify Pong physics still work
-
-### Phase 2C: @tyler-arcade/multiplayer
-Extract networking from Pong:
-- Socket.io wrapper with rooms
-- Client connection with auto-reconnect
-- State synchronization with delta compression
-- Room management system
-- **Test**: Verify multiplayer still works
-
-### Phase 2D: @tyler-arcade/2d-renderer
-Extract rendering from Pong:
-- Advanced Canvas2D operations
-- Sprite rendering with animations
-- Particle systems for effects
-- Camera2D with viewport management
-- **Test**: Verify visuals still work
-
-### Phase 2E: @tyler-arcade/ui
-Extract UI components:
-- Reusable menu system
-- HUD components (score, lives, timers)
-- Dialog/popup system
-- Leaderboard display
-- **Test**: Verify UI still works
-
-## 🎮 Game Development Guidelines
-
-### UI/UX Requirements
-- Single screen design that fits in viewport without scrolling
-- Join popup overlays main game while players can see others play
-- Dark mode by default (Dark Reader type settings: -10 Contrast)
-- Players see game when they reach server
-- Name input popup (not separate screen)
-- Generate random names if none entered
-- Optional room codes (default to MAIN room)
-- Standby mode UI when game hasn't started
-- Allow early control testing/chat while waiting
-
-### 3D Game Controls (Future)
-- Camera controls: JKLI keys
-  - J/L: left/right
-  - K/I: up/down
-
-### Technical Stack
-- **Frontend**: HTML5 Canvas + JavaScript
-- **Backend**: Node.js + Express + Socket.io
-- **Deployment**: Railway (free tier)
-- **Networking**: WebSocket-based real-time sync
-- **Performance**: Client-side prediction and interpolation
-- **Testing**: ngrok for multiplayer testing
-
-## 📁 Current Structure (Phase 1)
-
-```
-p6/
-├── packages/               # Shared packages
-│   └── core/              # @tyler-arcade/core
-│       ├── src/
-│       │   ├── GameLoop.js    # Game loop management
-│       │   ├── Canvas2D.js    # Basic 2D rendering
-│       │   ├── EventBus.js    # Event system
-│       │   └── index.js       # Package exports
-│       └── package.json
-├── games/                 # Individual games
-│   └── pong/             # First test game
-│       ├── public/
-│       │   ├── index.html     # Game interface
-│       │   └── game.js        # Client-side game
-│       ├── server.js          # Multiplayer server
-│       └── package.json
-├── package.json          # Workspace root
-└── README.md            # Project overview
-```
-
-## 🚀 Planned Hub Architecture
-
-**Future unified server structure:**
-```
-tyler-arcade/
-├── packages/          # @tyler-arcade/* packages  
-├── games/            # Game implementations only
-│   ├── pong/        # Game logic & assets
-│   └── snake/       # Game logic & assets
-├── public/          # Main hub interface
-│   ├── index.html  # Game selection menu
-│   ├── app.js      # Hub navigation
-│   ├── games/      # Game-specific public assets
-│   └── shared/     # Common UI/CSS (dark theme)
-└── server.js       # Unified server with routing
-```
-
-**Server routing:**
-- `/` → Game selection hub (dark theme menu)
-- `/pong` → Pong game interface
-- `/snake` → Snake game interface  
-- `/api/games` → Available games list
-
-This provides a single deployment with multiple games while maintaining clean separation.
-
-## 🎯 Development Principles
-
-1. **DRY**: No code duplication between packages
-2. **Single Responsibility**: Each package has one clear purpose
-3. **Zero Dependencies**: Minimize external dependencies
-4. **TypeScript Support**: JSDoc types for better IDE support
-5. **Test Coverage**: Unit tests for critical functionality
-6. **Documentation**: Clear examples for each package
-7. **Incremental**: Extract working code, don't build theoretical packages
-
-## 🚀 Quick Commands
-
+### Game Development Lifecycle
 ```bash
-# Start Pong game
-cd games/pong
-npm start
-# Open http://localhost:3000
+# 1. Create new game in development folder
+mkdir games-not-yet-tested/new-game
+cd games-not-yet-tested/new-game
 
-# Install all workspace dependencies
-npm install
+# 2. Develop with individual server (any port)
+npm start  
 
-# Add new game
-mkdir games/new-game
-cd games/new-game
-npm init
-# Add "@tyler-arcade/core": "file:../../packages/core" to dependencies
+# 3. Create BaseGame implementation when ready
+# games-not-yet-tested/new-game/new-game-game.js
+
+# 4. Move to active games (auto-loaded by unified server)
+mv games-not-yet-tested/new-game games/
+
+# 5. Access at http://localhost:3000/new-game
 ```
 
-## 📋 TODO: Next Steps
+### Folder Management
+- **`/games/`**: Production-ready games (3 currently)
+- **`/games-tested/`**: Broken games moved here (e.g., tetris)
+- **`/games-not-yet-tested/`**: 200+ games in development
 
-### Phase 2A: Package Extraction (Immediate)
-1. **Extract @tyler-arcade/2d-input** from Pong
-   - Move input handling code to package
-   - Update Pong to use package
-   - Test multiplayer still works
-   
-2. **Extract @tyler-arcade/2d-physics** from Pong
-   - Move collision detection to package
-   - Update Pong physics to use package
-   - Test physics still work
+## ✅ Current Status (Phase 2 Complete)
 
-3. **Extract @tyler-arcade/multiplayer** from Pong
-   - Move Socket.io networking to package
-   - Update Pong to use package
-   - Test real-time sync still works
+### Unified Server Achievements
+1. **3 Working Games**: Pong, Snake, Tic-tac-toe all functional
+2. **Consistent Architecture**: All games use BaseGame pattern
+3. **Auto-loading System**: Server discovers and loads games automatically
+4. **Room Isolation**: Games don't interfere with each other
+5. **Error Documentation**: Comprehensive troubleshooting guide in COMMON_ERRORS.md
 
-### Phase 2B: Hub Development
-4. **Create unified server** 
-   - Refactor to single server with routing
-   - Build game selection hub interface
-   - Implement dark theme consistency
+### Game Features (Cross-Game)
+- ✅ **Real-time Multiplayer** - Socket.io with room isolation
+- ✅ **Spectator Mode** - Watch games in progress
+- ✅ **Random Name Generation** - Themed names per game type
+- ✅ **Dark Mode Design** - Consistent UI/UX across all games
+- ✅ **Mobile-Friendly** - Responsive popup-based UI
+- ✅ **Turn Validation** - Proper game state management
 
-5. **Build second game** (Snake or Tic-tac-toe)
-   - Use all extracted packages
-   - Validate package reusability
-   - Test hub routing
+### Individual Game Features
+**Pong**: Real-time physics, collision detection, paddle controls  
+**Snake**: Direction queue system, food generation, multiplayer scoring  
+**Tic-tac-toe**: Turn-based gameplay, winner detection, game reset
 
-### Phase 3: Migration Planning (Future)
-6. **Package stabilization**
-   - Publish packages to npm when mature
-   - Establish versioning strategy
-   - Create package documentation
+## 🚀 Next Phase: Game Library Expansion
 
-7. **Individual repo extraction**
-   - Move games to separate repos when ready
-   - Deploy each game independently
-   - Create lightweight hub coordinator
+### Ready for Production
+- Convert games from `/games-not-yet-tested/` to BaseGame pattern
+- Focus on popular/classic games first (Wordle, Connect Four, etc.)
+- Maintain quality over quantity - only move fully working games
 
-## 💡 Key Insights
+### Future Package Extraction (When Stable)
+- Publish `@tyler-arcade/*` packages to npm  
+- Extract to individual repos when 10+ games are stable
+- Create tyler-game-hub repository linking to deployed games
 
-- **Minimal viable approach works**: Started with tiny core package, built working game
-- **Real validation**: Pong proves the architecture works for multiplayer games
-- **Incremental is safer**: Extract from working code vs. building theoretical packages
-- **Socket.io integration**: Clean separation between client/server game logic
-- **Mobile-first UI**: Popup overlay design works great for mobile players
+## 🎯 Development Principles (Validated)
+
+1. **Working Game First**: Build functional games before extracting packages
+2. **BaseGame Pattern**: Consistent API across all games for unified server  
+3. **Room Isolation**: Each game in separate Socket.io rooms to prevent conflicts
+4. **Auto-Discovery**: Server automatically finds and loads games
+5. **Quality Over Quantity**: Only promote fully working games to production
+6. **Package Reusability**: Shared `@tyler-arcade/*` packages across games
+7. **Mobile-First UI**: Responsive popup-based design for all platforms
+
+## 🎮 Game Development Guidelines (Implemented)
+
+### UI/UX Standards ✅
+- **Single screen design** - Fits in viewport without scrolling
+- **Join popup overlay** - Players see game immediately, popup to join
+- **Dark mode by default** - Consistent across all games
+- **Random name generation** - Themed names if player leaves field empty
+- **Optional room codes** - Default to main room, codes optional
+- **Spectator mode** - Watch games in progress
+- **Mobile-friendly** - Responsive controls and UI
+
+### Technical Standards ✅
+- **Frontend**: HTML5 Canvas + JavaScript ES6 modules
+- **Backend**: Node.js + Express + Socket.io with room isolation  
+- **Deployment**: Single unified server on port 3000
+- **Networking**: WebSocket-based real-time multiplayer
+- **Performance**: 60 FPS unified game loop
+- **Architecture**: BaseGame pattern with GameRegistry routing
+
+### 3D Game Controls (Future Planning)
+- **Camera controls**: JKLI keys (J/L: left/right, K/I: up/down)
+- **Movement**: Standard WASD or arrow keys
+
+## 💡 Key Achievements & Insights
+
+### Architecture Successes ✅
+- **Unified Server**: Single `npm start` loads all games
+- **Conflict Prevention**: GameRegistry prevents event handler conflicts
+- **Hot Deployment**: Move games to `/games` folder to enable
+- **Error Documentation**: Comprehensive troubleshooting guide (COMMON_ERRORS.md)
+- **Package System**: Proven `@tyler-arcade/*` package reusability
+
+### Game Development Insights
+- **BaseGame Pattern**: Provides consistent multiplayer API
+- **Room-based Isolation**: Prevents cross-game interference  
+- **Auto-discovery**: Makes adding new games seamless
+- **Mobile-first Design**: Popup UI works excellently across devices
+- **Quality Gating**: Folder separation keeps production clean
 
 ---
 
-*This project started from analyzing 70+ games in p4, decided to build clean modular packages from scratch in p6. The incremental "working game first" approach has been validated with Pong.*
+*Successfully evolved from individual game servers to unified architecture. The "working game first" approach validated the BaseGame pattern with 3 functional multiplayer games.*
