@@ -1,0 +1,11 @@
+{
+  "name": "@tyler-arcade/snake",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@tyler-arcade/core": "*",
+    "@tyler-arcade/2d-input": "*",
+    "@tyler-arcade/2d-physics": "*",
+    "@tyler-arcade/multiplayer": "*"
+  }
+}
