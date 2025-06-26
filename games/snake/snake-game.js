@@ -210,12 +210,12 @@ class SnakeGameState {
   }
 
   createSnake(playerId) {
-    // Grid-aligned starting positions with offset for right-side snakes
+    // Grid-aligned starting positions with proper vertical spacing (2 grid gaps minimum)
     const startPositions = [
-      {x: 100, y: 100}, // Player 1 - left side, top
-      {x: 300, y: 120}, // Player 2 - right side, slightly lower
-      {x: 100, y: 200}, // Player 3 - left side, bottom
-      {x: 300, y: 220}  // Player 4 - right side, slightly lower
+      {x: 100, y: 60},  // Player 1 - left side, top
+      {x: 300, y: 120}, // Player 2 - right side, middle-top  
+      {x: 100, y: 180}, // Player 3 - left side, middle-bottom
+      {x: 300, y: 240}  // Player 4 - right side, bottom
     ]
     
     const startPos = startPositions[playerId - 1] || startPositions[0]
