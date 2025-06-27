@@ -33,8 +33,8 @@ export class BlockGame extends BaseGame {
    * Initialize game world
    */
   initializeGame() {
-    // Create some initial blocks
-    for (let i = 0; i < 10; i++) {
+    // Create collision blocks (doubled from 10 to 20)
+    for (let i = 0; i < 20; i++) {
       this.blocks.push({
         id: i,
         x: Math.random() * (this.gameWidth - 50),
@@ -167,9 +167,22 @@ export class BlockGame extends BaseGame {
 
     // Update players
     this.players.forEach(player => {
-      // Update position
-      player.x += player.velocityX * deltaTime
-      player.y += player.velocityY * deltaTime
+      // Calculate new position
+      const newX = player.x + player.velocityX * deltaTime
+      const newY = player.y + player.velocityY * deltaTime
+      
+      // Check collision with blocks and other players before moving
+      if (!this.checkBlockCollision(newX, player.y, player) && !this.checkPlayerCollision(newX, player.y, player)) {
+        player.x = newX
+      } else {
+        player.velocityX = 0 // Stop horizontal movement on collision
+      }
+      
+      if (!this.checkBlockCollision(player.x, newY, player) && !this.checkPlayerCollision(player.x, newY, player)) {
+        player.y = newY
+      } else {
+        player.velocityY = 0 // Stop vertical movement on collision
+      }
       
       // Keep players in bounds
       player.x = Math.max(player.width/2, Math.min(this.gameWidth - player.width/2, player.x))
@@ -201,6 +214,63 @@ export class BlockGame extends BaseGame {
 
     // Broadcast game state to all clients (only during active gameplay)
     this.broadcast('gameState', this.getGameStateForClient())
+  }
+
+  /**
+   * Check collision between player and blocks
+   */
+  checkBlockCollision(playerX, playerY, player) {
+    const playerLeft = playerX - player.width/2
+    const playerRight = playerX + player.width/2
+    const playerTop = playerY - player.height/2
+    const playerBottom = playerY + player.height/2
+    
+    for (const block of this.blocks) {
+      const blockLeft = block.x
+      const blockRight = block.x + block.width
+      const blockTop = block.y
+      const blockBottom = block.y + block.height
+      
+      // Check if rectangles overlap
+      if (playerLeft < blockRight && 
+          playerRight > blockLeft && 
+          playerTop < blockBottom && 
+          playerBottom > blockTop) {
+        return true // Collision detected
+      }
+    }
+    return false // No collision
+  }
+
+  /**
+   * Check collision between player and other players
+   */
+  checkPlayerCollision(playerX, playerY, currentPlayer) {
+    const playerLeft = playerX - currentPlayer.width/2
+    const playerRight = playerX + currentPlayer.width/2
+    const playerTop = playerY - currentPlayer.height/2
+    const playerBottom = playerY + currentPlayer.height/2
+    
+    for (const otherPlayer of this.players) {
+      // Skip collision check with self
+      if (otherPlayer.id === currentPlayer.id) {
+        continue
+      }
+      
+      const otherLeft = otherPlayer.x - otherPlayer.width/2
+      const otherRight = otherPlayer.x + otherPlayer.width/2
+      const otherTop = otherPlayer.y - otherPlayer.height/2
+      const otherBottom = otherPlayer.y + otherPlayer.height/2
+      
+      // Check if rectangles overlap
+      if (playerLeft < otherRight && 
+          playerRight > otherLeft && 
+          playerTop < otherBottom && 
+          playerBottom > otherTop) {
+        return true // Collision detected
+      }
+    }
+    return false // No collision
   }
 
   /**
