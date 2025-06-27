@@ -45,7 +45,14 @@ function setupSocketEvents() {
     
     socket.on('playerAssigned', (data) => {
         console.log('Player assigned:', data)
-        playerId = data.playerId
+        if (data && data.playerData) {
+            playerId = data.playerData.playerId
+            playerName = data.playerData.playerName
+        } else if (data && data.playerId) {
+            // Fallback for old format
+            playerId = data.playerId
+            playerName = data.playerName
+        }
     })
     
     socket.on('gameState', (state) => {

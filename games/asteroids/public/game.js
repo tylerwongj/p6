@@ -40,7 +40,7 @@ function connectToServer() {
         gameState = state;
         
         // Find my player
-        if (playerName) {
+        if (playerName && state.players && Array.isArray(state.players)) {
             myPlayer = state.players.find(p => p.name === playerName);
         }
         
@@ -127,30 +127,36 @@ function render() {
     const { players, asteroids, bullets } = gameState;
 
     // Draw asteroids
-    asteroids.forEach(asteroid => {
-        drawAsteroid(asteroid);
-    });
+    if (asteroids && Array.isArray(asteroids)) {
+        asteroids.forEach(asteroid => {
+            drawAsteroid(asteroid);
+        });
+    }
 
     // Draw bullets
-    bullets.forEach(bullet => {
-        ctx.fillStyle = '#ff0';
-        ctx.beginPath();
-        ctx.arc(bullet.x, bullet.y, 2, 0, 2 * Math.PI);
-        ctx.fill();
-    });
+    if (bullets && Array.isArray(bullets)) {
+        bullets.forEach(bullet => {
+            ctx.fillStyle = '#ff0';
+            ctx.beginPath();
+            ctx.arc(bullet.x, bullet.y, 2, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+    }
 
     // Draw players
-    players.forEach(player => {
-        if (player.alive) {
-            drawPlayer(player);
-        } else {
-            // Draw explosion or death animation
-            ctx.fillStyle = '#f00';
-            ctx.font = '20px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('💥', player.x, player.y);
-        }
-    });
+    if (players && Array.isArray(players)) {
+        players.forEach(player => {
+            if (player.alive) {
+                drawPlayer(player);
+            } else {
+                // Draw explosion or death animation
+                ctx.fillStyle = '#f00';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('💥', player.x, player.y);
+            }
+        });
+    }
 
     // Draw UI
     drawUI();
@@ -233,32 +239,37 @@ function drawAsteroid(asteroid) {
 function drawUI() {
     // Draw game status
     let statusText = 'Asteroids Game';
-    if (gameState.players.length === 0) {
-        statusText = 'Waiting for players...';
-    } else if (!gameState.gameStarted) {
-        statusText = 'Game starting...';
+    if (gameState && Array.isArray(gameState.players)) {
+        if (gameState.players.length === 0) {
+            statusText = 'Waiting for players...';
+        } else if (!gameState.gameStarted) {
+            statusText = 'Game starting...';
+        }
     }
     
     // Draw top scores
-    const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
-    sortedPlayers.forEach((player, index) => {
+    if (gameState && Array.isArray(gameState.players)) {
+        const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
+        sortedPlayers.forEach((player, index) => {
         ctx.fillStyle = player.socketId === playerId ? '#0ff' : '#fff';
         ctx.font = '14px Arial';
         ctx.textAlign = 'left';
-        ctx.fillText(`${player.name}: ${player.score}`, 20, 30 + index * 20);
-    });
+            ctx.fillText(`${player.name}: ${player.score}`, 20, 30 + index * 20);
+        });
+    }
     
     // Draw asteroid count
     ctx.fillStyle = '#fff';
     ctx.font = '12px Arial';
-    ctx.fillText(`Asteroids: ${gameState.asteroids.length}`, 20, canvas.height - 20);
+    const asteroidCount = (gameState && Array.isArray(gameState.asteroids)) ? gameState.asteroids.length : 0;
+    ctx.fillText(`Asteroids: ${asteroidCount}`, 20, canvas.height - 20);
 }
 
 function updateUI() {
     const gameInfo = document.getElementById('gameInfo');
     if (!gameState) return;
 
-    const playerCount = gameState.players.length;
+    const playerCount = Array.isArray(gameState.players) ? gameState.players.length : 0;
     
     if (playerCount === 0) {
         gameInfo.textContent = 'Waiting for players...';

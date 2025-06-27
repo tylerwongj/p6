@@ -212,6 +212,45 @@ Games without BaseGame classes are still served as static files for backward com
 ### Error Documentation
 See `COMMON_ERRORS.md` for comprehensive troubleshooting guide covering Socket.io issues, game join problems, UI rendering, and multiplayer state management patterns.
 
+## 🚨 Current Critical Issues
+
+### Server Stability Issue - Chess Game TypeError
+**Status**: URGENT - Chess game causes server crashes when players attempt to join
+**Error**: `TypeError: this.players.set is not a function`
+**Impact**: Entire unified server becomes unstable, affecting all games
+**Location**: `/games-testing/chess/chess-game.js:52`
+**Required**: Immediate fix to prevent server crashes
+
+### Games-Testing Status (Beta Games)
+**Working**: 1 game
+- ✅ bingo - Join and gameplay functional
+
+**Broken**: 2 games  
+- ❌ chess - Server crash on join (critical)
+- ❌ concentration-memory - Join button non-functional
+
+**Recently Failed**: 3 games moved to games-failed
+- simon-memory-sequence - Ready button issues
+- color-hunt - Ready button issues  
+- card-war - Persistent ready button failures
+
+### File Structure Refactoring Applied
+**Legacy Organization**: All `server.js` files moved to `legacy/` subfolders
+**Structure**:
+```
+games/[game-name]/
+├── [game-name]-game.js    # Used by unified server  
+├── public/
+├── package.json
+└── legacy/
+    └── server.js          # Legacy standalone server
+```
+
+### Auto-Tab Opening Feature
+**Enhancement**: Server opens 2 browser tabs per beta game for multiplayer testing
+**Pattern**: game1-tab1, game1-tab2, game2-tab1, game2-tab2
+**Timing**: 300ms between paired tabs, 800ms between games
+
 ### Development Philosophy
 **"Working Game First → Extract Packages"**
 - Build games that work in monorepo

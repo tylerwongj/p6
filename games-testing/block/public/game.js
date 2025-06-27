@@ -1,28 +1,47 @@
-import { GameLoop, Canvas2D, EventBus } from '/node_modules/@tyler-arcade/core/src/index.js'
-import { InputManager } from '/node_modules/@tyler-arcade/2d-input/src/index.js'
+// Simplified - remove Tyler Arcade imports that might be causing issues
+// import { GameLoop, Canvas2D, EventBus } from '/node_modules/@tyler-arcade/core/src/index.js'
+// import { InputManager } from '/node_modules/@tyler-arcade/2d-input/src/index.js'
 
 class BlockGame {
   constructor() {
     this.canvas = document.getElementById('gameCanvas')
-    this.renderer = new Canvas2D(this.canvas)
-    this.gameLoop = new GameLoop()
-    this.events = new EventBus()
-    this.input = new InputManager()
+    this.ctx = this.canvas.getContext('2d')
+    
+    // Make canvas focusable and focus it
+    this.canvas.tabIndex = 0
+    this.canvas.focus()
     
     this.socket = io()
     this.playerId = null
     this.playerName = ''
     this.gameState = null
     this.myPlayer = null
+    this.inputState = {
+      left: false,
+      right: false,
+      up: false,
+      down: false
+    }
     
     this.setupSocket()
     this.setupInput()
     
-    // Start game loop immediately for spectating
-    this.gameLoop.start(
-      (deltaTime) => this.update(deltaTime),
-      (deltaTime) => this.render(deltaTime)
-    )
+    // Start simple game loop
+    this.startGameLoop()
+    
+    // Focus canvas when clicked
+    this.canvas.addEventListener('click', () => {
+      this.canvas.focus()
+    })
+  }
+
+  startGameLoop() {
+    const gameLoop = () => {
+      this.update()
+      this.render()
+      requestAnimationFrame(gameLoop)
+    }
+    requestAnimationFrame(gameLoop)
   }
 
   setupSocket() {
@@ -33,11 +52,13 @@ class BlockGame {
     })
 
     this.socket.on('gameState', (state) => {
+      console.log('Received game state:', state) // Debug
       this.gameState = state
       
       // Find my player
-      if (this.playerId) {
+      if (this.playerId && Array.isArray(state.players)) {
         this.myPlayer = state.players.find(p => p.id === this.playerId)
+        console.log('My player:', this.myPlayer) // Debug
       }
       
       this.updateUI()
@@ -72,76 +93,209 @@ class BlockGame {
   }
 
   setupInput() {
-    // Handle R key for resetting game
-    this.input.on('keydown', (e, key) => {
-      if (key === 'r' || key === 'R') {
-        e.preventDefault()
-        if (this.socket) {
-          this.socket.emit('customEvent', 'resetGame', [])
-        }
+    // Handle keyboard input
+    document.addEventListener('keydown', (e) => {
+      console.log('Key pressed:', e.code) // Debug
+      switch(e.code) {
+        case 'ArrowLeft':
+        case 'KeyA':
+          this.inputState.left = true
+          break
+        case 'ArrowRight':
+        case 'KeyD':
+          this.inputState.right = true
+          break
+        case 'ArrowUp':
+        case 'KeyW':
+          this.inputState.up = true
+          break
+        case 'ArrowDown':
+        case 'KeyS':
+          this.inputState.down = true
+          break
+        case 'KeyR':
+          e.preventDefault()
+          if (this.socket) {
+            this.socket.emit('customEvent', 'resetGame', [])
+          }
+          break
       }
     })
 
-    // Send input to server using InputManager
+    document.addEventListener('keyup', (e) => {
+      switch(e.code) {
+        case 'ArrowLeft':
+        case 'KeyA':
+          this.inputState.left = false
+          break
+        case 'ArrowRight':
+        case 'KeyD':
+          this.inputState.right = false
+          break
+        case 'ArrowUp':
+        case 'KeyW':
+          this.inputState.up = false
+          break
+        case 'ArrowDown':
+        case 'KeyS':
+          this.inputState.down = false
+          break
+      }
+    })
+
+    // Send input to server
     setInterval(() => {
       if (this.playerId && this.myPlayer) {
-        const inputState = this.input.getInputState()
-        const input = {
-          left: inputState.left,
-          right: inputState.right,
-          up: inputState.up,
-          down: inputState.down
+        // Debug: Log when input is being sent
+        const hasInput = this.inputState.left || this.inputState.right || this.inputState.up || this.inputState.down
+        if (hasInput) {
+          console.log('Sending input:', this.inputState)
         }
-        this.socket.emit('playerInput', input)
+        this.socket.emit('playerInput', this.inputState)
       }
     }, 1000 / 60) // 60 FPS input
   }
 
-  update(deltaTime) {
+  update() {
     // Client-side prediction could go here
     // For now, just rely on server state
   }
 
-  render(deltaTime) {
-    this.renderer.clear()
+  render() {
+    const ctx = this.ctx
+    
+    // Clear canvas with black background FIRST
+    ctx.fillStyle = '#000'
+    ctx.fillRect(0, 0, 800, 600)
+    
+    // Then draw a test rectangle
+    ctx.fillStyle = '#ff0000'
+    ctx.fillRect(10, 10, 50, 50)
     
     if (!this.gameState) {
-      this.renderer.drawText('Connecting...', 400, 300, '#fff', '24px Arial')
+      ctx.fillStyle = '#fff'
+      ctx.font = '24px Arial'
+      ctx.textAlign = 'center'
+      ctx.fillText('Connecting...', 400, 300)
       return
     }
 
     const { players, blocks, collectibles, gameStarted } = this.gameState
+    
+    // Debug: Log game state to console (less frequently)
+    if (Math.random() < 0.1) { // Only log 10% of the time to avoid spam
+      console.log('Game state:', {
+        players: players?.length || 0,
+        blocks: blocks?.length || 0, 
+        collectibles: collectibles?.length || 0,
+        gameStarted,
+        playerId: this.playerId,
+        playerName: this.playerName
+      })
+    }
 
-    // Draw background pattern
-    this.drawBackground()
+    // Draw background grid
+    ctx.strokeStyle = '#222'
+    ctx.lineWidth = 1
+    for (let x = 0; x < 800; x += 50) {
+      ctx.beginPath()
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, 600)
+      ctx.stroke()
+    }
+    for (let y = 0; y < 600; y += 50) {
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(800, y)
+      ctx.stroke()
+    }
 
     // Draw blocks (decorative/obstacles)
-    blocks.forEach(block => {
-      this.renderer.drawRect(block.x, block.y, block.width, block.height, block.color)
-    })
+    if (blocks && Array.isArray(blocks)) {
+      blocks.forEach(block => {
+        ctx.fillStyle = block.color
+        ctx.fillRect(block.x, block.y, block.width, block.height)
+      })
+    }
 
     // Draw collectibles
-    collectibles.forEach(collectible => {
-      // Draw glow effect
-      this.renderer.ctx.save()
-      this.renderer.ctx.shadowColor = collectible.color
-      this.renderer.ctx.shadowBlur = 20
-      this.renderer.drawCircle(collectible.x, collectible.y, collectible.radius, collectible.color)
-      this.renderer.ctx.restore()
-      
-      // Draw sparkle effect
-      this.renderer.drawCircle(collectible.x, collectible.y, collectible.radius * 0.5, '#fff')
-    })
+    if (collectibles && Array.isArray(collectibles)) {
+      collectibles.forEach(collectible => {
+        // Draw glow effect
+        ctx.save()
+        ctx.shadowColor = collectible.color
+        ctx.shadowBlur = 20
+        ctx.fillStyle = collectible.color
+        ctx.beginPath()
+        ctx.arc(collectible.x, collectible.y, collectible.radius, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
+        
+        // Draw sparkle effect
+        ctx.fillStyle = '#fff'
+        ctx.beginPath()
+        ctx.arc(collectible.x, collectible.y, collectible.radius * 0.5, 0, Math.PI * 2)
+        ctx.fill()
+      })
+    }
 
     // Draw players
-    players.forEach(player => {
-      this.drawPlayer(player)
-    })
+    if (players && Array.isArray(players)) {
+      players.forEach(player => {
+        // Draw player shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'
+        ctx.fillRect(
+          player.x - player.width/2 + 2, 
+          player.y - player.height/2 + 2, 
+          player.width, 
+          player.height
+        )
+        
+        // Draw player body
+        ctx.fillStyle = player.color
+        ctx.fillRect(
+          player.x - player.width/2, 
+          player.y - player.height/2, 
+          player.width, 
+          player.height
+        )
+        
+        // Highlight current player
+        if (player.id === this.playerId) {
+          ctx.strokeStyle = '#fff'
+          ctx.lineWidth = 2
+          ctx.strokeRect(
+            player.x - player.width/2 - 2, 
+            player.y - player.height/2 - 2, 
+            player.width + 4, 
+            player.height + 4
+          )
+        }
+        
+        // Draw player name
+        ctx.fillStyle = '#fff'
+        ctx.font = '12px Arial'
+        ctx.textAlign = 'center'
+        ctx.fillText(player.name, player.x, player.y - player.height/2 - 10)
+        
+        // Draw score
+        ctx.fillStyle = '#4CAF50'
+        ctx.font = '10px Arial'
+        ctx.fillText(`${player.score}pts`, player.x, player.y + player.height/2 + 20)
+      })
+    }
 
     // Draw game status
     if (!gameStarted) {
-      this.renderer.drawText('Waiting for players...', 400, 100, '#fff', '20px Arial')
+      ctx.fillStyle = '#fff'
+      ctx.font = '20px Arial'
+      ctx.textAlign = 'center'
+      ctx.fillText('Waiting for players...', 400, 100)
     }
+    
+    // Debug: Draw a test rectangle to ensure rendering works
+    ctx.fillStyle = '#ff0000'
+    ctx.fillRect(10, 10, 50, 50)
   }
 
   drawBackground() {
@@ -220,7 +374,7 @@ class BlockGame {
     
     if (!this.gameState) return
 
-    const playerCount = this.gameState.players.length
+    const playerCount = Array.isArray(this.gameState.players) ? this.gameState.players.length : 0
     
     if (playerCount === 0) {
       gameInfo.textContent = 'Waiting for players...'
@@ -233,7 +387,7 @@ class BlockGame {
     }
 
     // Update scoreboard
-    if (this.gameState.leaderboard && scoreList) {
+    if (this.gameState.leaderboard && scoreList && Array.isArray(this.gameState.players)) {
       scoreList.innerHTML = this.gameState.leaderboard.map(entry => {
         const player = this.gameState.players.find(p => p.socketId === entry.playerId)
         const playerName = player ? player.name : 'Unknown'

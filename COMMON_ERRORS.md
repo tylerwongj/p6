@@ -1823,4 +1823,108 @@ function hideJoinOverlay() {
 
 **Games Fixed:** Bingo game join overlay now disappears correctly after implementing this fix.
 
-*Last updated: Fixed bingo join overlay issue, 6 working games confirmed*
+## 🚨 Latest Session Errors & Fixes Applied
+
+### Chess Game TypeError - Server Breaking Error
+**Problem:** Critical error when players try to join chess game:
+```
+TypeError: this.players.set is not a function
+    at ChessGame.handlePlayerJoin (chess-game.js:52:18)
+```
+**Root Cause:** Chess game initialized `this.players` as Array but tried to use Map methods (`.set()`)
+**Impact:** Entire server crashes when anyone tries to join chess, making all games unusable
+**Status:** URGENT FIX NEEDED - Chess causing server instability
+
+### Concentration Memory Join Button Issues  
+**Problem:** Join button doesn't work in concentration memory game
+**Symptoms:**
+- Button appears but doesn't respond to clicks
+- No console errors but join functionality fails
+- Players cannot enter the game
+
+### Ready Button Failures Across Testing Games
+**Problem:** Multiple games in games-testing folder have ready button functionality issues
+**Affected Games:** 
+- Card War (moved to games-failed)
+- Color Hunt (moved to games-failed) 
+- Simon Memory Sequence (moved to games-failed)
+**Common Symptoms:**
+- Ready buttons appear but don't respond
+- Games stuck in waiting/ready phase
+- Players can join but cannot start gameplay
+
+### Join Screen Persistence Issues
+**Problem:** Join screens don't disappear after successful join across multiple games
+**Affected Games:** Chess, Concentration Memory, Bingo (fixed)
+**Root Cause:** Missing `playerAssigned` event emission from server or incorrect playerData structure
+**Symptoms:**
+- Players click JOIN successfully but overlay remains
+- Server logs show successful join but client stuck
+- Game functionality blocked by persistent join screen
+
+### Games-Testing Beta Folder Organization Complete
+**Changes Applied:**
+- Moved failing games: simon-memory-sequence, color-hunt → games-failed
+- 3 games remain in games-testing: bingo, chess, concentration-memory
+- Auto-browser tab opening working (2 tabs per beta game)
+- Beta tagging system functional ("(Beta)" suffix)
+
+### Server Auto-Tab Opening Enhancement  
+**Feature Added:** Server automatically opens 2 browser tabs per beta game for multiplayer testing
+**Implementation:** 
+- Tab order: game1-tab1, game1-tab2, game2-tab1, game2-tab2
+- Delays: 300ms between paired tabs, 800ms between different games
+- Only opens for games-testing folder games
+
+### File Structure Refactoring - Legacy Folders
+**Organization Improvement:** All legacy `server.js` files moved to `legacy/` subfolders
+**Affected:** 7 games total (4 production + 3 testing)
+**Benefit:** Clean main directories showing only files used by unified server
+**Structure:**
+```
+games/[game-name]/
+├── [game-name]-game.js    # Used by unified server
+├── public/
+├── package.json  
+└── legacy/
+    └── server.js          # Legacy standalone server
+```
+
+### Parameter Naming & RoomId Fixes Applied
+**Problem:** Systematic issues with client-server communication format
+**Root Causes:**
+1. **Parameter mismatch**: Server expects `data.name` but games sent `playerName`
+2. **Wrong roomId**: Games used `'main'` instead of actual game directory name
+
+**Fixed Games:**
+- ✅ Bingo: `name: playerName, roomId: 'bingo'`
+- ✅ Chess: `name: name, roomId: 'chess'`
+
+**Pattern Applied:**
+```javascript
+// ✅ Correct format for all games
+socket.emit('joinGame', {
+  name: playerName,        // NOT playerName as key
+  roomId: 'game-directory-name'  // NOT 'main'
+})
+```
+
+**Result:** Join functionality restored for games with correct parameter format
+
+### Bingo Game UI Layout Fix
+**Problem:** Game content extending beyond viewport, scrolling required
+**Solution Applied:** 
+- Changed body layout from `justify-content: center` to `flex-start`
+- Added `padding-top: 10px` for proper spacing
+- Reduced title font size from 3em to 2em
+- Content now fits in viewport without scrolling
+
+### Bingo Gameplay Clarification
+**How Bingo Works:** (User education)
+1. Server auto-calls numbers every 5 seconds
+2. Yellow highlights indicate number matches on your card
+3. Players manually click squares to mark them green
+4. Goal: Mark 5 squares in a row (any direction)
+5. Click "BINGO!" button when you have a line
+
+*Last updated: Latest session errors documented - server stability issues with chess game critical*

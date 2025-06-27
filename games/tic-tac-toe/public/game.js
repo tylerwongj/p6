@@ -38,6 +38,7 @@ function setupSocketEvents() {
   
   socket.on('gameState', (state) => {
     console.log('📊 Game state received:', state)
+    console.log('📊 Players data type:', typeof state.players, 'isArray:', Array.isArray(state.players))
     gameState = state
     updateUI()
   })
@@ -110,9 +111,18 @@ function updateUI() {
 
   // Update players list
   const playersList = document.getElementById('playersList')
-  if (gameState.players) {
+  if (gameState.players && Array.isArray(gameState.players)) {
     let playersHTML = ''
     gameState.players.forEach(player => {
+      const isMe = player.id === socket.id
+      const name = isMe ? `${player.name} (You)` : player.name
+      playersHTML += `<div class="player">${name} - ${player.symbol || 'Spectator'}</div>`
+    })
+    playersList.innerHTML = playersHTML
+  } else if (gameState.players && typeof gameState.players === 'object') {
+    // Handle case where players is an object instead of array
+    let playersHTML = ''
+    Object.values(gameState.players).forEach(player => {
       const isMe = player.id === socket.id
       const name = isMe ? `${player.name} (You)` : player.name
       playersHTML += `<div class="player">${name} - ${player.symbol || 'Spectator'}</div>`
@@ -140,7 +150,9 @@ function updateUI() {
     currentPlayer.textContent = gameState.currentPlayer || 'X'
     resetButton.disabled = false
   } else {
-    gameStatus.textContent = `Waiting for players... (${gameState.players ? gameState.players.length : 0}/2)`
+    const playerCount = gameState.players ? 
+      (Array.isArray(gameState.players) ? gameState.players.length : Object.keys(gameState.players).length) : 0
+    gameStatus.textContent = `Waiting for players... (${playerCount}/2)`
     currentTurn.style.display = 'none'
     winnerAnnouncement.style.display = 'none'
     resetButton.disabled = true

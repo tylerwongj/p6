@@ -78,8 +78,15 @@ class BingoGame extends BaseGame {
   }
 
   handlePlayerJoin(socketId, playerName, roomId, socket) {
+    if (roomId !== 'bingo') {
+      return {
+        success: false,
+        reason: 'Wrong room - this is Bingo'
+      };
+    }
+
     if (Object.keys(this.gameState.players).length >= 6) {
-      return { success: false, message: 'Game is full (max 6 players)' }
+      return { success: false, reason: 'Game is full (max 6 players)' }
     }
 
     this.gameState.players[socketId] = {
@@ -103,7 +110,10 @@ class BingoGame extends BaseGame {
       setTimeout(() => this.startGame(), 3000)
     }
 
-    return { success: true }
+    return {
+      success: true,
+      playerData: { playerId: socketId, playerName: playerName }
+    }
   }
 
   startGame() {
@@ -341,6 +351,16 @@ class BingoGame extends BaseGame {
       
       this.sendToPlayer(playerId, 'gameState', personalState)
     })
+  }
+
+  handleCustomEvent(socketId, eventName, args, socket) {
+    console.log(`🎮 Bingo Game: Handling custom event '${eventName}' from ${socketId}`);
+    
+    switch (eventName) {
+      case 'resetGame':
+        this.resetGame();
+        break;
+    }
   }
 
   handlePlayerLeave(socketId, player, socket) {

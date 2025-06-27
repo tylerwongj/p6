@@ -161,7 +161,9 @@ export class BlockGame extends BaseGame {
    * Update game state (called by unified server at 60 FPS)
    */
   update(deltaTime) {
-    if (!this.gameStarted) return
+    if (!this.gameStarted) {
+      return
+    }
 
     // Update players
     this.players.forEach(player => {
@@ -197,7 +199,7 @@ export class BlockGame extends BaseGame {
       })
     })
 
-    // Broadcast game state to all clients
+    // Broadcast game state to all clients (only during active gameplay)
     this.broadcast('gameState', this.getGameStateForClient())
   }
 
@@ -269,7 +271,7 @@ export class BlockGame extends BaseGame {
    * Get game state for clients
    */
   getGameStateForClient() {
-    return {
+    const state = {
       players: this.players,
       blocks: this.blocks,
       collectibles: this.collectibles,
@@ -279,6 +281,10 @@ export class BlockGame extends BaseGame {
       scores: this.scoreManager.getAllScores(),
       leaderboard: this.scoreManager.getLeaderboard()
     }
+    
+    // Debug logging removed to prevent spam
+    
+    return state
   }
 
   /**
