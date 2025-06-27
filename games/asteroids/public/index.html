@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asteroids - Tyler Arcade</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        #gameContainer {
+            position: relative;
+            background: #111;
+            border: 2px solid #333;
+            border-radius: 10px;
+        }
+        
+        #gameCanvas {
+            display: block;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px 10px 0 0;
+            text-align: center;
+        }
+        
+        #joinPopup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #333;
+            text-align: center;
+            min-width: 300px;
+        }
+        
+        input {
+            padding: 10px;
+            margin: 10px;
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            background: #444;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background: #666;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #ccc;
+        }
+        
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            background: #333;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            border: 1px solid #555;
+            font-family: inherit;
+            font-size: 14px;
+            z-index: 1000;
+            transition: background 0.2s ease;
+        }
+        
+        .back-button:hover {
+            background: #555;
+            color: #fff;
+        }
+        
+        .back-button:visited {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-button">← Back to Hub</a>
+    
+    <div id="gameContainer">
+        <div id="ui">
+            <h1>Asteroids</h1>
+            <div id="gameInfo">Waiting for players...</div>
+        </div>
+        
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div id="joinPopup">
+            <h2>Join Asteroids Game</h2>
+            <p>Enter your name (optional):</p>
+            <input type="text" id="playerName" placeholder="Leave empty for random name" maxlength="20">
+            <br>
+            <button onclick="joinGame()">JOIN</button>
+            
+            <div class="controls">
+                <p><strong>Controls:</strong></p>
+                <p>Arrow Keys or A/D: Rotate</p>
+                <p>W or Up Arrow: Thrust</p>
+                <p>Spacebar: Fire</p>
+                <p>Press 0 to restart</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="game.js"></script>
+</body>
+</html>

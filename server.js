@@ -21,14 +21,29 @@ app.use('/node_modules', express.static('node_modules'))
 
 // Auto-discover and load all games
 async function loadAllGames() {
-  const gamesDir = path.join(__dirname, 'games')
+  // Load production games
+  await loadGamesFromDirectory('games', false)
+  
+  // Load testing games (beta)
+  await loadGamesFromDirectory('games-testing', true)
+}
+
+async function loadGamesFromDirectory(dirName, isBeta = false) {
+  const gamesDir = path.join(__dirname, dirName)
+  
+  // Check if directory exists
+  if (!fs.existsSync(gamesDir)) {
+    console.log(`Directory ${dirName} does not exist, skipping...`)
+    return
+  }
   
   try {
     const gameDirectories = fs.readdirSync(gamesDir, { withFileTypes: true })
       .filter(dirent => dirent.isDirectory())
       .map(dirent => dirent.name)
     
-    console.log(`Found ${gameDirectories.length} game directories:`, gameDirectories)
+    const statusText = isBeta ? ' (BETA)' : ''
+    console.log(`Found ${gameDirectories.length} ${dirName} directories${statusText}:`, gameDirectories)
     
     for (const gameDir of gameDirectories) {
       const gamePath = path.join(gamesDir, gameDir)
@@ -37,8 +52,9 @@ async function loadAllGames() {
       // Check if game class file exists
       if (fs.existsSync(gameClassFile)) {
         try {
-          console.log(`Attempting to import ${gameDir} game...`)
-          const gameModule = await import(`./games/${gameDir}/${gameDir}-game.js`)
+          const betaText = isBeta ? ' (BETA)' : ''
+          console.log(`Attempting to import ${gameDir} game${betaText}...`)
+          const gameModule = await import(`./${dirName}/${gameDir}/${gameDir}-game.js`)
           
           // Try different export patterns
           let GameClass = gameModule.default || gameModule[`${gameDir.charAt(0).toUpperCase() + gameDir.slice(1)}Game`]
@@ -54,6 +70,12 @@ async function loadAllGames() {
           if (GameClass) {
             console.log(`${gameDir} GameClass imported successfully`)
             const gameInstance = new GameClass()
+            
+            // Mark beta games
+            if (isBeta) {
+              gameInstance.isBeta = true
+              gameInstance.name = (gameInstance.name || gameDir) + ' (Beta)'
+            }
             
             // Set multiplayer server reference so game can broadcast
             if (gameInstance.setMultiplayerServer) {
@@ -138,13 +160,33 @@ multiplayerServer.startGameLoop((deltaTime) => {
 
 server.listen(PORT, () => {
   console.log(`Tyler Arcade running on http://localhost:${PORT}`)
-  console.log('Games available:')
   console.log('  • Hub: http://localhost:' + PORT)
   
   const games = gameRegistry.getGames()
+  const productionGames = []
+  const betaGames = []
+  
   for (const [gameId, game] of games) {
-    console.log(`  • ${game.name || gameId}: http://localhost:${PORT}/${gameId}`)
+    if (game.isBeta) {
+      betaGames.push({ id: gameId, name: game.name || gameId })
+    } else {
+      productionGames.push({ id: gameId, name: game.name || gameId })
+    }
   }
   
-  console.log('Press Ctrl+C to stop')
+  if (productionGames.length > 0) {
+    console.log('\nProduction Games:')
+    for (const game of productionGames) {
+      console.log(`  • ${game.name}: http://localhost:${PORT}/${game.id}`)
+    }
+  }
+  
+  if (betaGames.length > 0) {
+    console.log('\nBeta Games (Testing):')
+    for (const game of betaGames) {
+      console.log(`  • ${game.name}: http://localhost:${PORT}/${game.id}`)
+    }
+  }
+  
+  console.log('\nPress Ctrl+C to stop')
 })

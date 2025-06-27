@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simon Memory Sequence - Tyler Arcade</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #4ecdc4;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 15px;
+        }
+        
+        .players-area {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .player {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 5px;
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .player.current {
+            border: 3px solid #4ecdc4;
+            background: rgba(78, 205, 196, 0.2);
+        }
+        
+        .player.eliminated {
+            opacity: 0.5;
+            background: rgba(255, 0, 0, 0.2);
+        }
+        
+        .simon-board {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+        }
+        
+        .simon-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: #333;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 4px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        
+        .simon-button {
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 3px solid #333;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .simon-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .simon-button.disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .simon-button.active {
+            box-shadow: 0 0 20px currentColor, inset 0 0 20px rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+        
+        .red {
+            background: #ff4757;
+            border-top-left-radius: 100% 100%;
+            border-bottom-left-radius: 0;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        
+        .blue {
+            background: #3742fa;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            border-top-right-radius: 100% 100%;
+            border-bottom-right-radius: 0;
+        }
+        
+        .green {
+            background: #2ed573;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 100% 100%;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        
+        .yellow {
+            background: #ffa502;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 100% 100%;
+        }
+        
+        .center-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            background: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            font-size: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .sequence-info {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+        
+        .action-log {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-style: italic;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .ready-area {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .join-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .join-dialog {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+            border: 3px solid #4ecdc4;
+        }
+        
+        input[type="text"] {
+            padding: 12px;
+            border: 2px solid #4ecdc4;
+            border-radius: 15px;
+            margin: 10px 0;
+            font-size: 16px;
+            width: 200px;
+            text-align: center;
+        }
+        
+        .game-rules {
+            font-size: 14px;
+            color: #ccc;
+            margin: 15px 0;
+            line-height: 1.4;
+        }
+        
+        .leaderboard {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 400px;
+            text-align: center;
+        }
+        
+        .showing-indicator {
+            color: #ffa502;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>Simon Memory Sequence</h1>
+        </div>
+        
+        <div class="game-info">
+            <div id="gameStatus">Waiting for players...</div>
+            <div id="roundInfo"></div>
+            <div id="playerCount"></div>
+        </div>
+        
+        <div class="players-area" id="playersArea"></div>
+        
+        <div class="simon-board">
+            <div class="simon-container">
+                <div class="simon-button red" data-color="red" onclick="pressColor('red')"></div>
+                <div class="simon-button blue" data-color="blue" onclick="pressColor('blue')"></div>
+                <div class="simon-button green" data-color="green" onclick="pressColor('green')"></div>
+                <div class="simon-button yellow" data-color="yellow" onclick="pressColor('yellow')"></div>
+                
+                <div class="center-circle">
+                    <div class="sequence-info" id="sequenceInfo">Ready</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="action-log" id="actionLog"></div>
+        
+        <div class="ready-area">
+            <button id="readyBtn" onclick="markReady()" style="display:none;">Ready to Play</button>
+        </div>
+        
+        <div id="leaderboard" class="leaderboard" style="display:none;"></div>
+    </div>
+    
+    <div class="join-overlay" id="joinOverlay">
+        <div class="join-dialog">
+            <h2>Join Simon Memory Sequence</h2>
+            <div class="game-rules">
+                <p><strong>How to Play:</strong></p>
+                <p>• Watch the sequence of colors</p>
+                <p>• Repeat the sequence by clicking colors</p>
+                <p>• Sequences get longer each round</p>
+                <p>• One mistake and you're out!</p>
+            </div>
+            <input type="text" id="playerNameInput" placeholder="Your name" maxlength="15">
+            <br><br>
+            <button onclick="joinGame()">JOIN GAME</button>
+        </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="game.js"></script>
+</body>
+</html>

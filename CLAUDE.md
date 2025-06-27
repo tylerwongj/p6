@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Production Commands
 ```bash
-# Start unified server (loads all 3 working games)
+# Start unified server (loads all 7 working games)
 npm start
-# → Serves: http://localhost:3000 (hub), /pong, /snake, /tic-tac-toe
+# → Serves: http://localhost:3000 (hub), /pong, /snake, /tic-tac-toe, /asteroids, /card-war, /color-hunt, /simon-memory-sequence
 
 # Install all workspace dependencies
 npm run install-all
@@ -25,27 +25,35 @@ npm run build
 # Create new game in development
 mkdir games-not-yet-tested/new-game
 
-# Develop individual game (any port)
-cd games-not-yet-tested/new-game && npm start
+# Move game to testing phase
+mv games-not-yet-tested/new-game games-testing/
+
+# Test game individually (any port)
+cd games-testing/new-game && npm start
 
 # Move working game to production (auto-loaded)
-mv games-not-yet-tested/game games/
+mv games-testing/new-game games/
 
-# Move broken game to tested folder
-mv games/broken-game games-tested/
+# Move failed game to failed folder (gets gitignored)
+mv games-testing/broken-game games-failed/
 ```
 
 ## Current Status
 
-### Working Games (3) ✅
+### Working Games (7) ✅
 - **Pong**: Real-time multiplayer paddle game with physics
 - **Snake**: Multiplayer snake with direction queue and food generation  
 - **Tic-tac-toe**: Turn-based strategy with spectator support
+- **Asteroids**: Real-time space shooter with asteroid field (continuous shooting enabled)
+- **Card War**: Classic card comparison game - highest card wins
+- **Color Hunt**: Fast-paced color matching challenge game
+- **Simon Memory Sequence**: Classic Simon Says memory pattern game
 
 ### Folder Organization
 - `/games/` - Production games (auto-loaded by unified server)
-- `/games-tested/` - Broken games (tetris moved here)
-- `/games-not-yet-tested/` - 200+ games in development
+- `/games-testing/` - Games being actively tested and debugged  
+- `/games-failed/` - Games that failed testing and were passed on (gitignored)
+- `/games-not-yet-tested/` - 200+ games in development (gitignored)
 
 ## Architecture
 
@@ -62,10 +70,19 @@ The repository uses a **unified server architecture** where a single server (`se
 /games/                    # ✅ Working games (auto-loaded by unified server)
   ├── pong/               # BaseGame implementation
   ├── snake/              # BaseGame implementation
-  └── tic-tac-toe/        # BaseGame implementation
+  ├── tic-tac-toe/        # BaseGame implementation
+  ├── asteroids/          # BaseGame implementation (continuous shooting)
+  ├── card-war/           # BaseGame implementation
+  ├── color-hunt/         # BaseGame implementation
+  └── simon-memory-sequence/  # BaseGame implementation
 
-/games-tested/             # ❌ Broken/problematic games (gitignored)
-  └── tetris/             # Moved here due to issues
+/games-testing/            # 🔧 Games being actively tested and debugged
+  └── (empty - ready for testing new games)
+
+/games-failed/             # ❌ Failed games (gitignored)
+  ├── tetris/             # Moved here due to issues
+  ├── connect-four/       # Moved here due to click handling issues  
+  └── battleship-modern/  # Moved here due to game flow issues
 
 /games-not-yet-tested/     # 🔄 Games in development (gitignored, 200+ games)
   ├── 20-questions/
@@ -145,6 +162,52 @@ The unified server automatically:
 
 ### Legacy Compatibility
 Games without BaseGame classes are still served as static files for backward compatibility, but won't have multiplayer functionality through the unified server.
+
+### BaseGame Integration Patterns
+
+**Critical Implementation Requirements:**
+- `handlePlayerJoin()` must return `{success: true, playerData: {...}}` format
+- `spectators` array must be initialized in constructor
+- `roomId` validation required: `if (roomId !== 'game-name') return {success: false}`
+- Custom events: `socket.emit('customEvent', eventName, args)` not `{eventName, args}`
+- Player data structure: Use `Array` for `this.players` unless overridden with `Map`
+- Game loops: Remove custom game loops, use unified server `update(deltaTime)` method
+
+**Common Migration Issues:**
+- **Map vs Array Players**: Games using `Map` must override in constructor: `this.players = new Map()`
+- **Custom Event Format**: Server expects separate `eventName` and `args` parameters
+- **Spectator Initialization**: Must initialize `this.spectators = []` in constructor
+- **Return Format**: `handlePlayerJoin` must return object with `success` boolean
+
+## Recent Session Updates
+
+### Latest Game Additions
+**Session Summary**: Successfully added 3 new working games (Card War, Color Hunt, Simon Memory Sequence) and fixed critical join popup issues.
+
+#### Games Added:
+- **Card War**: Classic card comparison multiplayer game
+- **Color Hunt**: Fast-paced color matching challenge
+- **Simon Memory Sequence**: Memory pattern game (Simon Says)
+
+#### Critical Fixes Applied:
+1. **Join Popup Issues**: Fixed playerAssigned event data structure mismatch
+   - **Problem**: Games returned `{ success: true, playerId, gameState }` 
+   - **Solution**: Changed to `{ success: true, playerData: { playerId, gameState } }`
+   - **Affected**: Simon Memory Sequence, Card War, Color Hunt
+
+2. **Asteroids Continuous Shooting**: Enhanced shooting mechanics
+   - **Problem**: Required individual spacebar presses for each bullet
+   - **Solution**: Added time-based rate limiting (10 bullets/second max)
+   - **Result**: Players can hold spacebar for continuous shooting
+
+3. **Game Loop Conflicts**: Removed custom game loops
+   - **Problem**: Color Hunt had custom setInterval game loop
+   - **Solution**: Use unified server's update(deltaTime) method
+   - **Benefit**: Consistent performance across all games
+
+#### Games Moved to Failed:
+- **Connect Four**: Click handling issues → games-failed/
+- **Battleship Modern**: Game flow progression issues → games-failed/
 
 ### Error Documentation
 See `COMMON_ERRORS.md` for comprehensive troubleshooting guide covering Socket.io issues, game join problems, UI rendering, and multiplayer state management patterns.

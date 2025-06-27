@@ -159,7 +159,8 @@ export class GameRegistry {
         description: game.description || `Play ${gameId}`,
         players: game.getPlayerCount ? game.getPlayerCount() : 0,
         maxPlayers: game.maxPlayers || 2,
-        status: game.getStatus ? game.getStatus() : 'available'
+        status: game.getStatus ? game.getStatus() : 'available',
+        isBeta: game.isBeta || false
       })
     }
     
