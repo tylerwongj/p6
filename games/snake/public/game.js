@@ -9,8 +9,6 @@ const canvas = document.getElementById('gameCanvas')
 const ctx = canvas.getContext('2d')
 
 // UI elements
-const joinOverlay = document.getElementById('joinOverlay')
-const playerNameInput = document.getElementById('playerNameInput')
 const playersListEl = document.getElementById('playersList')
 const gameStatusEl = document.getElementById('gameStatus')
 
@@ -29,9 +27,6 @@ function init() {
         // Set up input handling
         setupInputHandling()
         
-        // Show join overlay
-        showJoinOverlay()
-        
         // Initial render to show something
         renderInitialScreen()
         
@@ -46,20 +41,20 @@ function setupSocketEvents() {
     socket.on('connect', () => {
         console.log('✅ Connected to server successfully!')
         console.log('Socket ID:', socket.id)
+        // Auto-join game using shared player name system
+        playerName = TylerArcadePlayer.autoJoinGame(socket, 'snake')
     })
     
     socket.on('playerAssigned', (data) => {
         console.log('✅ Player assigned successfully:', data)
         playerId = data.playerId
         playerName = data.playerName || playerName
-        hideJoinOverlay()
-        console.log('Join overlay hidden, waiting for game state...')
+        console.log('Player assigned, waiting for game state...')
     })
     
     socket.on('joinFailed', (data) => {
         console.log('❌ Join failed:', data)
         alert(`Failed to join: ${data.reason}`)
-        showJoinOverlay() // Show overlay again for retry
     })
     
     socket.on('gameState', (state) => {
@@ -75,7 +70,6 @@ function setupSocketEvents() {
     
     socket.on('disconnect', () => {
         console.log('❌ Disconnected from server')
-        showJoinOverlay()
         gameState = null
         renderInitialScreen()
     })
@@ -125,56 +119,6 @@ function setupInputHandling() {
     }, 50) // Check input 20 times per second
 }
 
-function showJoinOverlay() {
-    joinOverlay.style.display = 'flex'
-    playerNameInput.focus()
-}
-
-function hideJoinOverlay() {
-    joinOverlay.style.display = 'none'
-}
-
-function joinGame() {
-    let name = playerNameInput.value.trim()
-    
-    // Auto-generate name if empty
-    if (!name) {
-        const guestNames = ['SnakeCharmer', 'Viper', 'Cobra', 'Python', 'Serpent', 'Adder', 'Mamba', 'Boa']
-        name = guestNames[Math.floor(Math.random() * guestNames.length)] + Math.floor(Math.random() * 100)
-    }
-    
-    playerName = name
-    
-    console.log('🎮 Attempting to join game...')
-    console.log('Player name:', playerName)
-    console.log('Room ID: snake')
-    console.log('Socket connected:', socket.connected)
-    console.log('Socket ID:', socket.id)
-    
-    if (!socket.connected) {
-        console.log('❌ Socket not connected! Reconnecting...')
-        socket.connect()
-        return
-    }
-    
-    const joinData = { name: playerName, roomId: 'snake' }
-    console.log('📤 Sending joinGame event with data:', joinData)
-    socket.emit('joinGame', joinData)
-    
-    // Set a timeout to detect if join fails
-    setTimeout(() => {
-        if (!playerId) {
-            console.log('⚠️ Join timeout - no response from server after 5 seconds')
-            console.log('Current socket state:', {
-                connected: socket.connected,
-                id: socket.id
-            })
-        }
-    }, 5000)
-}
-
-// Make functions globally available
-window.joinGame = joinGame
 
 function updateUI() {
     if (!gameState) return
@@ -310,12 +254,6 @@ function render() {
     })
 }
 
-// Handle enter key in name input
-playerNameInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        joinGame()
-    }
-})
 
 // Initialize when page loads
 window.addEventListener('load', () => {

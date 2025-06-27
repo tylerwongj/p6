@@ -51,6 +51,7 @@
             border: 2px solid #333;
             text-align: center;
             min-width: 300px;
+            z-index: 500;
         }
         
         input {
@@ -121,22 +122,13 @@
         
         <canvas id="gameCanvas" width="800" height="400"></canvas>
         
-        <div id="joinPopup">
-            <h2>Join Pong Game</h2>
-            <p>Enter your name (optional):</p>
-            <input type="text" id="playerName" placeholder="Leave empty for random name" maxlength="20">
-            <br>
-            <button onclick="joinGame()">JOIN</button>
-            
-            <div class="controls">
-                <p><strong>Controls:</strong></p>
-                <p>W/S or Arrow Keys to move paddle</p>
-                <p>Press 0 to start/restart ball</p>
-            </div>
+        <div id="gameControls" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); text-align: center; color: #ccc; font-size: 14px;">
+            <p><strong>Controls:</strong> W/S or Arrow Keys to move paddle | Press 0 to start/restart ball</p>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/shared.js"></script>
     <script type="module" src="game.js"></script>
 </body>
 </html>

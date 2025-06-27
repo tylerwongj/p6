@@ -1,8 +1,8 @@
 {
-  "name": "simon-memory-sequence-game",
+  "name": "block-game",
   "version": "1.0.0",
   "type": "module",
-  "description": "Multiplayer Simon Memory sequence game using Tyler Arcade packages",
+  "description": "Block game using Tyler Arcade packages",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -11,7 +11,11 @@
   "dependencies": {
     "@tyler-arcade/core": "file:../../packages/core",
     "@tyler-arcade/2d-input": "file:../../packages/2d-input",
+    "@tyler-arcade/2d-physics": "file:../../packages/2d-physics",
     "@tyler-arcade/multiplayer": "file:../../packages/multiplayer",
+    "@tyler-arcade/ui-components": "file:../../packages/ui-components",
+    "@tyler-arcade/spectators": "file:../../packages/spectators",
+    "@tyler-arcade/game-state": "file:../../packages/game-state",
     "express": "^4.18.0"
   }
 }

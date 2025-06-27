@@ -16,27 +16,24 @@ function init() {
   
   // Set up UI events
   setupEventListeners()
-  
-  // Show join overlay
-  showJoinOverlay()
 }
 
 function setupSocketEvents() {
   socket.on('connect', () => {
     console.log('✅ Connected to server!')
+    // Auto-join game using shared player name system
+    playerName = TylerArcadePlayer.autoJoinGame(socket, 'tic-tac-toe')
   })
   
   socket.on('playerAssigned', (data) => {
     console.log('✅ Player assigned:', data)
     playerId = data.playerId
     playerName = data.playerName || playerName
-    hideJoinOverlay()
   })
   
   socket.on('joinFailed', (data) => {
     console.log('❌ Join failed:', data)
     alert(`Failed to join: ${data.reason}`)
-    showJoinOverlay()
   })
   
   socket.on('gameState', (state) => {
@@ -47,7 +44,6 @@ function setupSocketEvents() {
   
   socket.on('disconnect', () => {
     console.log('❌ Disconnected')
-    showJoinOverlay()
     gameState = null
   })
 }
@@ -68,42 +64,8 @@ function setupEventListeners() {
     }
   })
 
-  // Enter key on name input
-  document.getElementById('playerName').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      joinGame()
-    }
-  })
 }
 
-function showJoinOverlay() {
-  document.getElementById('joinOverlay').style.display = 'flex'
-}
-
-function hideJoinOverlay() {
-  document.getElementById('joinOverlay').style.display = 'none'
-}
-
-function joinGame() {
-  let name = document.getElementById('playerName').value.trim()
-  
-  // Generate random name if empty
-  if (!name) {
-    const adjectives = ['Swift', 'Clever', 'Mighty', 'Stealthy', 'Wise', 'Bold', 'Quick', 'Sharp']
-    const nouns = ['Knight', 'Wizard', 'Hunter', 'Explorer', 'Warrior', 'Scholar', 'Rogue', 'Champion']
-    const colors = ['Red', 'Blue', 'Green', 'Gold', 'Silver', 'Purple', 'Orange', 'Cyan']
-    
-    const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)]
-    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)]
-    const randomColor = colors[Math.floor(Math.random() * colors.length)]
-    
-    name = `${randomColor}${randomAdjective}${randomNoun}`
-  }
-  
-  playerName = name
-  console.log('🎮 Joining tic-tac-toe game as:', playerName)
-  socket.emit('joinGame', { name: playerName, roomId: 'tic-tac-toe' })
-}
 
 function makeMove(position) {
   if (!gameState || !socket || !playerId) {
@@ -186,7 +148,6 @@ function updateUI() {
 }
 
 // Make functions globally available
-window.joinGame = joinGame
 window.resetGame = resetGame
 
 // Initialize when page loads

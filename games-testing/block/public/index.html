@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asteroids - Tyler Arcade</title>
+    <title>Block - Tyler Arcade</title>
     <style>
         body {
             margin: 0;
@@ -51,6 +51,7 @@
             border: 2px solid #333;
             text-align: center;
             min-width: 300px;
+            z-index: 500;
         }
         
         input {
@@ -108,6 +109,34 @@
         .back-button:visited {
             color: #fff;
         }
+
+        .scoreboard {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            min-width: 150px;
+        }
+
+        .scoreboard h3 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+            font-size: 16px;
+        }
+
+        .score-entry {
+            margin: 5px 0;
+            padding: 3px 0;
+            font-size: 14px;
+        }
+
+        .current-player {
+            color: #4CAF50;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -115,15 +144,20 @@
     
     <div id="gameContainer">
         <div id="ui">
-            <h1>Asteroids</h1>
+            <h1>Block</h1>
             <div id="gameInfo">Waiting for players...</div>
         </div>
         
         <canvas id="gameCanvas" width="800" height="600"></canvas>
-    </div>
-
-    <div class="controls" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); text-align: center; color: #ccc; font-size: 14px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px;">
-        <strong>Controls:</strong> Arrow Keys or A/D: Rotate | W or Up Arrow: Thrust | Spacebar: Fire | Press 0 to restart
+        
+        <div id="scoreboard" class="scoreboard" style="display: none;">
+            <h3>Scores</h3>
+            <div id="scoreList"></div>
+        </div>
+        
+        <div id="gameControls" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); text-align: center; color: #ccc; font-size: 14px;">
+            <p><strong>Controls:</strong> Arrow Keys to move | Collect golden orbs for points | Press R to reset game</p>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>

@@ -10,6 +10,7 @@ export class SnakeGame extends BaseGame {
     this.name = 'Snake'
     this.description = 'Classic snake game - eat food, grow longer, avoid walls!'
     this.maxPlayers = 4
+    this.spectators = []
     this.gameState = new SnakeGameState()
     this.multiplayerServer = null // Will be set by server
     this.lastUpdateTime = 0

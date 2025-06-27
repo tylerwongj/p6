@@ -1,4 +1,3 @@
-import io from 'https://cdn.socket.io/4.7.2/socket.io.esm.min.js';
 
 let socket = null;
 let playerName = '';
@@ -23,12 +22,13 @@ function connectToServer() {
     socket.on('connect', () => {
         console.log('Connected to server');
         playerId = socket.id;
+        // Auto-join game using shared player name system
+        playerName = TylerArcadePlayer.autoJoinGame(socket, 'asteroids');
     });
     
     socket.on('playerAssigned', (data) => {
         playerId = data.playerId;
         playerName = data.playerName;
-        document.getElementById('joinPopup').style.display = 'none';
         console.log(`Assigned name: ${playerName}`);
     });
 
@@ -52,27 +52,6 @@ function connectToServer() {
     });
 }
 
-function joinGame() {
-    const nameInput = document.getElementById('playerName');
-    const name = nameInput.value.trim();
-    playerName = name || generateRandomName();
-    
-    if (!socket) {
-        connectToServer();
-    }
-    
-    socket.emit('joinGame', { name: playerName, roomId: 'asteroids' });
-}
-
-function generateRandomName() {
-    const adjectives = ['Red', 'Blue', 'Fast', 'Quick', 'Cool', 'Super', 'Mega', 'Epic', 'Stinky', 'Cosmic'];
-    const nouns = ['Knight', 'Wizard', 'Ninja', 'Racer', 'Player', 'Gamer', 'Hero', 'Master', 'Explorer', 'Pilot'];
-    
-    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const noun = nouns[Math.floor(Math.random() * nouns.length)];
-    
-    return `${adjective}${noun}`;
-}
 
 // Input handling
 document.addEventListener('keydown', (e) => {
@@ -99,7 +78,7 @@ document.addEventListener('keydown', (e) => {
         case 'Digit0':
             e.preventDefault();
             if (socket) {
-                socket.emit('resetGame');
+                socket.emit('customEvent', 'resetGame', []);
             }
             break;
     }
@@ -294,8 +273,6 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Start the game loop
+// Initialize connection and start game loop
+connectToServer();
 gameLoop();
-
-// Export functions to global scope for HTML onclick handlers
-window.joinGame = joinGame;

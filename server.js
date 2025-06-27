@@ -3,6 +3,7 @@ import { createServer } from 'http'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
+import { exec } from 'child_process'
 import { MultiplayerServer, GameRegistry } from '@tyler-arcade/multiplayer'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -185,6 +186,31 @@ server.listen(PORT, () => {
     console.log('\nBeta Games (Testing):')
     for (const game of betaGames) {
       console.log(`  • ${game.name}: http://localhost:${PORT}/${game.id}`)
+    }
+    
+    // Auto-open 2 browser tabs for each beta game for testing
+    console.log('\nOpening browser tabs for beta game testing...')
+    
+    let delay = 500
+    for (const game of betaGames) {
+      const gameUrl = `http://localhost:${PORT}/${game.id}`
+      
+      // Open first tab for this game
+      setTimeout(() => {
+        exec(`open "${gameUrl}"`, (error) => {
+          if (error) console.log(`Could not open browser for ${game.name}:`, error.message)
+        })
+      }, delay)
+      
+      // Open second tab for this game immediately after
+      setTimeout(() => {
+        exec(`open "${gameUrl}"`, (error) => {
+          if (error) console.log(`Could not open second tab for ${game.name}:`, error.message)
+        })
+      }, delay + 300)
+      
+      // Increase delay for next game's tabs
+      delay += 800
     }
   }
   

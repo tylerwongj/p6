@@ -82,15 +82,14 @@
 
         .join-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: transparent;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
+            z-index: 500;
         }
 
         .join-form {
@@ -165,26 +164,16 @@
         
         <canvas id="gameCanvas" width="400" height="300"></canvas>
         
-        <div class="controls">
-            <strong>Controls:</strong> WASD or Arrow Keys to move | Press 0 to reset game
-        </div>
-        
         <div class="players-list" id="playersList"></div>
         <div class="status" id="gameStatus">Waiting for players...</div>
     </div>
 
-    <!-- Join Game Overlay -->
-    <div class="join-overlay" id="joinOverlay">
-        <div class="join-form">
-            <h2>Join Snake Game</h2>
-            <p>Enter your name (optional):</p>
-            <input type="text" id="playerNameInput" placeholder="Leave blank for random name" maxlength="20">
-            <br>
-            <button onclick="joinGame()">JOIN</button>
-        </div>
+    <div class="controls" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); text-align: center; color: #ccc; font-size: 14px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px;">
+        <strong>Controls:</strong> WASD or Arrow Keys to move | Press 0 to reset game
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/shared.js"></script>
     <script src="game.js"></script>
 </body>
 </html>

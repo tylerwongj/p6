@@ -11,6 +11,7 @@ export class BaseGame {
     
     // Game state
     this.players = []
+    this.spectators = []
     this.status = 'available'
     
     // Registry reference (set by GameRegistry)
@@ -147,6 +148,91 @@ export class BaseGame {
   sendToPlayer(socketId, event, data) {
     if (this.registry) {
       this.registry.multiplayerServer.sendToClient(socketId, event, data)
+    }
+  }
+
+  /**
+   * Add spectator to this game
+   * @param {string} socketId - Socket ID of spectator
+   * @param {string} spectatorName - Name of spectator
+   */
+  addSpectator(socketId, spectatorName) {
+    // Ensure spectators array exists (backward compatibility)
+    if (!this.spectators) {
+      this.spectators = []
+    }
+    const spectator = { socketId, name: spectatorName, joinedAt: Date.now() }
+    this.spectators.push(spectator)
+    this.sendToPlayer(socketId, 'spectatorAssigned', { spectator, gameState: this.getSpectatorGameState() })
+    this.broadcastToPlayers('spectatorJoined', { spectator })
+  }
+
+  /**
+   * Remove spectator from this game
+   * @param {string} socketId - Socket ID of spectator to remove
+   * @returns {object|null} Removed spectator object or null if not found
+   */
+  removeSpectator(socketId) {
+    // Ensure spectators array exists (backward compatibility)
+    if (!this.spectators) {
+      this.spectators = []
+      return null
+    }
+    const index = this.spectators.findIndex(s => s.socketId === socketId)
+    if (index !== -1) {
+      const spectator = this.spectators.splice(index, 1)[0]
+      this.broadcastToPlayers('spectatorLeft', { spectator })
+      return spectator
+    }
+    return null
+  }
+
+  /**
+   * Broadcast message to all spectators in this game
+   * @param {string} event - Event name
+   * @param {any} data - Data to broadcast
+   */
+  broadcastToSpectators(event, data) {
+    // Ensure spectators array exists (backward compatibility)
+    if (!this.spectators) {
+      this.spectators = []
+      return
+    }
+    this.spectators.forEach(spectator => {
+      this.sendToPlayer(spectator.socketId, event, data)
+    })
+  }
+
+  /**
+   * Broadcast message to all players (not spectators)
+   * @param {string} event - Event name
+   * @param {any} data - Data to broadcast
+   */
+  broadcastToPlayers(event, data) {
+    this.broadcast(event, data)
+  }
+
+  /**
+   * Get spectator count
+   * @returns {number} Number of spectators
+   */
+  getSpectatorCount() {
+    // Ensure spectators array exists (backward compatibility)
+    if (!this.spectators) {
+      this.spectators = []
+    }
+    return this.spectators.length
+  }
+
+  /**
+   * Get game state for spectators (override this for spectator-specific state)
+   * @returns {object} Game state object for spectators
+   */
+  getSpectatorGameState() {
+    return {
+      players: this.players,
+      status: this.status,
+      spectatorCount: this.getSpectatorCount()
     }
   }
 }

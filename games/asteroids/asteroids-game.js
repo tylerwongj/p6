@@ -3,12 +3,13 @@ import { BaseGame } from '@tyler-arcade/multiplayer';
 export class AsteroidsGame extends BaseGame {
     constructor() {
         super();
-        this.name = 'asteroids';
+        this.name = 'Asteroids';
         this.description = 'Blast asteroids in this classic space shooter!';
         this.maxPlayers = 4;
         
         // Override players to use Map instead of Array
         this.players = new Map();
+        this.spectators = [];
         
         this.asteroids = [];
         this.bullets = [];

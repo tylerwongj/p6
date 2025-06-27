@@ -117,6 +117,54 @@
             margin-top: 2rem;
         }
         
+        .player-name-section {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .player-name-label {
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        .player-name-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            padding: 5px 10px;
+            color: #fff;
+            font-size: 14px;
+            min-width: 120px;
+        }
+
+        .player-name-input::placeholder {
+            color: #888;
+        }
+
+        .randomize-btn {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .randomize-btn:hover {
+            background: #00ccff;
+        }
+
         @media (max-width: 600px) {
             .logo {
                 font-size: 2.5rem;
@@ -125,10 +173,24 @@
             .games-grid {
                 grid-template-columns: 1fr;
             }
+
+            .player-name-section {
+                position: relative;
+                top: 0;
+                right: 0;
+                margin-bottom: 20px;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="player-name-section">
+        <span class="player-name-label">Player:</span>
+        <input type="text" id="playerNameInput" class="player-name-input" placeholder="Auto-generated" maxlength="20">
+        <button id="randomizeBtn" class="randomize-btn">🎲</button>
+    </div>
+
     <div class="hub-container">
         <h1 class="logo">Tyler Arcade</h1>
         <p class="subtitle">Multiplayer Game Hub</p>

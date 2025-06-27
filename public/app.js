@@ -1,10 +1,74 @@
 class GameHub {
   constructor() {
     this.gamesContainer = document.getElementById('games-grid')
+    this.playerNameInput = document.getElementById('playerNameInput')
+    this.randomizeBtn = document.getElementById('randomizeBtn')
+    
+    this.initializePlayerName()
+    this.setupEventListeners()
     this.loadGames()
     
     // Refresh games list every 5 seconds
     setInterval(() => this.loadGames(), 5000)
+  }
+
+  initializePlayerName() {
+    // Load saved name or generate random one
+    const savedName = localStorage.getItem('tylerArcadePlayerName')
+    if (savedName) {
+      this.playerNameInput.value = savedName
+    } else {
+      this.generateRandomName()
+    }
+  }
+
+  setupEventListeners() {
+    // Save name when input changes
+    this.playerNameInput.addEventListener('input', () => {
+      const name = this.playerNameInput.value.trim()
+      if (name) {
+        localStorage.setItem('tylerArcadePlayerName', name)
+      }
+    })
+
+    // Generate random name when button clicked
+    this.randomizeBtn.addEventListener('click', () => {
+      this.generateRandomName()
+    })
+
+    // Also save on enter key
+    this.playerNameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const name = this.playerNameInput.value.trim()
+        if (name) {
+          localStorage.setItem('tylerArcadePlayerName', name)
+        }
+      }
+    })
+  }
+
+  generateRandomName() {
+    const adjectives = ['Red', 'Blue', 'Fast', 'Quick', 'Cool', 'Super', 'Mega', 'Epic', 'Stinky', 'Cosmic', 'Swift', 'Bold', 'Clever', 'Mighty']
+    const nouns = ['Knight', 'Wizard', 'Ninja', 'Racer', 'Player', 'Gamer', 'Hero', 'Master', 'Explorer', 'Warrior', 'Scout', 'Hunter', 'Ranger', 'Pilot']
+    
+    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)]
+    const noun = nouns[Math.floor(Math.random() * nouns.length)]
+    const randomName = `${adjective}${noun}`
+    
+    this.playerNameInput.value = randomName
+    localStorage.setItem('tylerArcadePlayerName', randomName)
+  }
+
+  getPlayerName() {
+    const name = this.playerNameInput.value.trim()
+    if (name) {
+      localStorage.setItem('tylerArcadePlayerName', name)
+      return name
+    }
+    
+    // Generate name if empty
+    this.generateRandomName()
+    return this.playerNameInput.value
   }
 
   async loadGames() {

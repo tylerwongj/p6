@@ -21,6 +21,8 @@
     "@tyler-arcade/2d-physics": "file:packages/2d-physics",
     "@tyler-arcade/multiplayer": "file:packages/multiplayer",
     "@tyler-arcade/ui-components": "file:packages/ui-components",
+    "@tyler-arcade/spectators": "file:packages/spectators",
+    "@tyler-arcade/game-state": "file:packages/game-state",
     "express": "^4.18.0"
   },
   "devDependencies": {},

@@ -1,0 +1,15 @@
+{
+  "name": "@tyler-arcade/game-state",
+  "version": "1.0.0",
+  "description": "Game state management utilities for Tyler Arcade games",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "keywords": ["multiplayer", "game-state", "turns", "scoring"],
+  "author": "Tyler",
+  "license": "MIT"
+}

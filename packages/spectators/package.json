@@ -1,0 +1,16 @@
+{
+  "name": "@tyler-arcade/spectators",
+  "version": "1.0.0",
+  "description": "Spectator management utilities for Tyler Arcade games",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./ui": "./src/ui/index.js"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "keywords": ["multiplayer", "spectators", "games"],
+  "author": "Tyler",
+  "license": "MIT"
+}

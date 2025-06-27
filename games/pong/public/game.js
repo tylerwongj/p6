@@ -27,6 +27,8 @@ class PongGame {
   setupSocket() {
     this.socket.on('connect', () => {
       console.log('Connected to server')
+      // Auto-join game using shared player name system
+      this.playerName = TylerArcadePlayer.autoJoinGame(this.socket, 'pong')
     })
 
     this.socket.on('gameState', (state) => {
@@ -37,7 +39,6 @@ class PongGame {
     this.socket.on('playerAssigned', (data) => {
       this.playerId = data.playerId
       this.playerName = data.playerName
-      document.getElementById('joinPopup').style.display = 'none'
       console.log(`Assigned as Player ${this.playerId}`)
     })
 
@@ -126,28 +127,7 @@ class PongGame {
   }
 }
 
-// Global functions for HTML buttons
-window.joinGame = function() {
-  const nameInput = document.getElementById('playerName')
-  const name = nameInput.value.trim() || generateRandomName()
-  
-  window.game.socket.emit('joinGame', { name, roomId: 'pong' })
-}
-
-window.joinWithRandomName = function() {
-  const name = generateRandomName()
-  window.game.socket.emit('joinGame', { name, roomId: 'pong' })
-}
-
-function generateRandomName() {
-  const adjectives = ['Red', 'Blue', 'Fast', 'Quick', 'Cool', 'Super', 'Mega', 'Epic']
-  const nouns = ['Knight', 'Wizard', 'Ninja', 'Racer', 'Player', 'Gamer', 'Hero', 'Master']
-  
-  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)]
-  const noun = nouns[Math.floor(Math.random() * nouns.length)]
-  
-  return `${adjective}${noun}`
-}
+// Game automatically joins using TylerArcadePlayer system
 
 // Start the game
 window.game = new PongGame()

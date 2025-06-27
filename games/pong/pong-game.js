@@ -10,6 +10,7 @@ export class PongGame extends BaseGame {
     this.name = 'Pong'
     this.description = 'Classic paddle game - first to 5 points wins!'
     this.maxPlayers = 2
+    this.spectators = []
     this.gameState = new PongGameState()
     this.gameLoopInterval = null
     

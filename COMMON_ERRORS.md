@@ -1746,4 +1746,81 @@ export class BaccaratGame extends BaseGame {
 6. Color Hunt ✅ (new)
 7. Simon Memory Sequence ✅ (new)
 
-*Last updated: Current session - 3 games added, join popup issues fixed, Asteroids enhanced, 7 working games total*
+### Card War Game - Ready Button Persistent Issues
+**Problem:** Card War game moved to games-failed due to unresolved ready button functionality
+**Symptoms:**
+- Ready button appears but doesn't respond to clicks
+- Players can join but cannot start game rounds
+- Game logic works but UI interaction fails
+- Multiple attempts to fix button event handlers unsuccessful
+
+**Attempted Fixes:**
+- Added event listeners for ready button clicks
+- Fixed playerData structure format for BaseGame compatibility
+- Validated Socket.io event handling
+- Checked for DOM element existence and proper IDs
+
+**Decision:** Game moved to `/games-failed/` for future debugging
+**Location:** `/Users/tyler/p6/games-failed/card-war/`
+**Status:** Abandoned temporarily due to persistent UI issues
+
+*Last updated: Current session - card-war moved to games-failed, 6 working games remain*
+
+### Join Overlay Not Disappearing - Missing playerAssigned Event
+**Problem:** Join screen/overlay doesn't disappear after clicking JOIN button
+**Symptoms:**
+- Player clicks JOIN button but join overlay remains visible
+- Server logs show successful player join but client stuck on join screen
+- Game appears unresponsive despite successful connection
+- Console shows no errors but `hideJoinOverlay()` never called
+
+**Root Cause:**
+Client listens for `'playerAssigned'` event to hide join overlay, but server doesn't emit this event from `handlePlayerJoin()` method.
+
+**Fix Applied (Bingo Game Example):**
+```javascript
+// ❌ Before: Server only calls broadcastGameState() after join
+handlePlayerJoin(socketId, playerName, roomId, socket) {
+  // ... join logic
+  this.broadcastGameState()
+  return { success: true }
+}
+
+// ✅ After: Server emits required playerAssigned event
+handlePlayerJoin(socketId, playerName, roomId, socket) {
+  // ... join logic
+  
+  // Send playerAssigned event to the joining player
+  this.sendToPlayer(socketId, 'playerAssigned', {
+    playerId: socketId,
+    playerName: playerName
+  })
+  
+  this.broadcastGameState()
+  return { success: true }
+}
+```
+
+**Client Pattern (Always Consistent):**
+```javascript
+// ✅ Client must listen for this event
+socket.on('playerAssigned', (data) => {
+  console.log('Player assigned:', data)
+  playerId = data.playerId
+  hideJoinOverlay() // This hides the join screen
+})
+
+function hideJoinOverlay() {
+  joinOverlay.style.display = 'none'
+}
+```
+
+**Prevention:** 
+- Always emit `'playerAssigned'` event in server's `handlePlayerJoin()` method
+- Include `playerId` and `playerName` in the event data
+- Use `this.sendToPlayer(socketId, 'playerAssigned', data)` in BaseGame implementations
+- Test join flow in browser to verify overlay disappears properly
+
+**Games Fixed:** Bingo game join overlay now disappears correctly after implementing this fix.
+
+*Last updated: Fixed bingo join overlay issue, 6 working games confirmed*
