@@ -28,7 +28,7 @@ open http://localhost:3000/tic-tac-toe
 ## 📁 Structure
 
 ```
-p6/
+tyler-arcade/
 ├── games/                     # ✅ Working games (auto-loaded)
 │   ├── pong/                  # Real-time paddle game
 │   ├── snake/                 # Multiplayer snake game

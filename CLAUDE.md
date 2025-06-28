@@ -524,6 +524,33 @@ export class YourGame extends BaseGame {
 }
 ```
 
+#### **Map vs Array Player Count Issues (CRITICAL)**
+**Problem**: Games using Map for players show "undefined/4" in hub instead of player count
+**Cause**: BaseGame's `getPlayerCount()` uses `this.players.length` but Map objects don't have `.length`
+**Solution**: Override `getPlayerCount()` method when using Map
+```javascript
+// ❌ Error: Using Map but relying on Array method
+export class GameName extends BaseGame {
+    constructor() {
+        super()
+        this.players = new Map() // Uses Map
+        // getPlayerCount() inherited from BaseGame uses this.players.length = undefined
+    }
+}
+
+// ✅ Fix: Override getPlayerCount for Map usage
+export class GameName extends BaseGame {
+    constructor() {
+        super()
+        this.players = new Map() // Uses Map
+    }
+    
+    getPlayerCount() {
+        return this.players.size // Use Map's .size property
+    }
+}
+```
+
 ### 🎮 GAME ENHANCEMENTS IMPLEMENTED
 
 #### **🚀 Asteroids Game - Enhanced Competitive Play**
@@ -650,3 +677,272 @@ function render() {
 
 ### 🎯 KEY TAKEAWAY FOR FUTURE DEVELOPMENT
 **Every error we fixed was CRITICAL and would break future games. This documentation prevents repeating these mistakes and provides proven patterns for collision detection, win conditions, and safe rendering.**
+
+## 🚨 LATEST SESSION UPDATE (2024-12-28): Hub Display & UX Fixes
+
+### 🛑 CRITICAL FIXES APPLIED
+
+#### **Player Count Display Fix (CRITICAL)**
+**Problem**: Asteroids game showing "undefined/4 players" in hub instead of actual player count
+**Root Cause**: Asteroids uses `Map` for players, but BaseGame's `getPlayerCount()` uses `this.players.length`
+**Solution**: Override `getPlayerCount()` method in games using Map data structure
+**Files Fixed**: `/games/asteroids/asteroids-game.js`
+**Impact**: Hub now correctly displays player counts for all games
+
+#### **Bingo Player Board Identification (UX)**
+**Problem**: Players couldn't identify which bingo cards belonged to them in multiplayer
+**Solution**: Added prominent visual highlighting for player's cards
+**Features Added**:
+- **Green Border & Glow**: 4px solid green border with shadow effect
+- **Background Tint**: Light green gradient background
+- **Scale Enhancement**: 2% size increase for visibility
+- **Title Enhancement**: "🎯 YOUR CARDS:" prefix with larger, green text
+- **Text Shadow**: Subtle shadow for better visibility
+**Files Modified**: `/games/bingo/public/index.html`, `/games/bingo/public/game.js`
+
+#### **Random Name Generator Enhancement (UX)**
+**Problem**: Limited variety in auto-generated player names (196 combinations)
+**Solution**: Expanded from 14x14 to 100x100 arrays
+**New Capacity**: 10,000 possible name combinations
+**Categories Added**:
+- **Sci-Fi**: Quantum, Cyber, Digital, Virtual, Atomic, Nuclear, Plasma
+- **Mythical**: Legendary, Divine, Eternal, Infinite, Supreme, Ultimate
+- **Materials**: Diamond, Platinum, Titanium, Obsidian, Crystal, Jade
+- **Creatures**: Viper, Cobra, Panther, Scorpion, Mantis, Griffin
+- **Classes**: Samurai, Gladiator, Berserker, Templar, Centurion, Spartan
+**Files Modified**: `/public/app.js`
+
+### 🔧 TECHNICAL PATTERNS ESTABLISHED
+
+#### **Map vs Array Data Structure Handling**
+```javascript
+// ✅ Always override getPlayerCount() when using Map
+export class GameName extends BaseGame {
+    constructor() {
+        super()
+        this.players = new Map() // When using Map instead of Array
+    }
+    
+    getPlayerCount() {
+        return this.players.size // Use .size for Map, not .length
+    }
+}
+```
+
+#### **Player Board Visual Identification Pattern**
+```css
+/* ✅ Player identification styling pattern */
+.game-card.my-card {
+    border: 4px solid #4caf50;
+    box-shadow: 0 0 30px rgba(76, 175, 80, 0.6);
+    background: linear-gradient(135deg, #ffffff, #f1f8e9);
+    transform: scale(1.02);
+}
+
+.game-card.my-card .card-title {
+    color: #2e7d32;
+    font-size: 1.3em;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+```
+
+#### **Random Name Generation Scaling Pattern**
+```javascript
+// ✅ Large-scale name generation for variety
+const adjectives = [...] // 100 items
+const nouns = [...] // 100 items
+// Result: 10,000 combinations vs previous 196
+```
+
+### 🚨 NEVER DO THESE (Additional Lessons)
+
+6. **NEVER** assume data structures without checking (Map vs Array player storage)
+7. **NEVER** implement multiplayer games without clear player identification
+8. **NEVER** use small random name pools (<1000 combinations) in multiplayer games
+
+### 📊 CURRENT GAME STATUS (All Enhanced)
+
+**Production Games (8)**: ✅ All Working & Enhanced
+- Asteroids: Player count fixed, competitive mode
+- Bingo: Player board highlighting, 4-card system
+- Pong, Snake, Tic-Tac-Toe, Card War, Color Hunt, Simon Memory: All stable
+
+**Random Name System**: ✅ 10,000 combinations (enhanced from 196)
+
+## 🚨 CRITICAL Session Update (2024-12-28): Game Balance & Anti-Cheat Systems
+
+### 🛠️ GAME MECHANICS ENHANCEMENTS
+
+#### **Pong - Advanced Paddle Physics & Progressive Speed**
+**Problem**: Ball deflection was too simple, games dragged on too long
+**Solutions Applied**:
+- **Angle-Based Deflection**: Ball angle varies based on paddle hit position (top/bottom)
+- **Progressive Speed**: Ball speed increases 2% each paddle hit to prevent endless games
+```javascript
+// ✅ Enhanced Paddle Collision Pattern
+const paddleCenter = paddle.y + paddle.height / 2
+const hitOffset = ball.y - paddleCenter
+const normalizedOffset = hitOffset / (paddle.height / 2) // -1 to 1
+ball.velocityY = normalizedOffset * 250 + paddle.velocityY * 0.3
+
+// Progressive speed increase (prevents infinite games)
+ball.velocityX *= 1.02
+ball.velocityY *= 1.02
+```
+
+#### **Asteroids - Dual Win Conditions & Restart Fix**
+**Problems**: Single win condition, infinite restart loops
+**Solutions Applied**:
+- **Dual Win System**: 500 points OR highest score when all players die
+- **Restart Loop Prevention**: `gameEnded` flag prevents multiple restart timers
+```javascript
+// ✅ Restart Loop Prevention Pattern (CRITICAL)
+endGame(winner) {
+    if (this.gameEnded) return // Prevent multiple calls
+    this.gameEnded = true
+    
+    setTimeout(() => {
+        this.resetGame() // Centralized reset
+    }, 5000)
+}
+
+resetGame() {
+    this.gameEnded = false // Reset flag for next game
+    // ... reset logic
+}
+```
+
+#### **Bingo - Anti-Cheat Validation & Brief Highlights**
+**Problems**: Players could cheat by marking uncalled numbers, highlights too obvious
+**Solutions Applied**:
+- **Card Disqualification**: ANY wrong mark invalidates entire card
+- **Ultra-Brief Highlights**: 300ms instead of 2000ms (easy to miss)
+```javascript
+// ✅ Anti-Cheat Pattern (Prevents all cheating)
+hasInvalidMarks(card, markedSpots) {
+    // Check EVERY marked spot on card
+    if (markedSpots.has(spotId) && !calledNumbers.includes(value)) {
+        return true // Card is completely invalid
+    }
+}
+
+// ✅ Brief Highlight Pattern (Miss it = lose advantage)
+cell.style.animation = 'highlight 0.3s ease-in-out'
+```
+
+#### **Block Game - Complete Reset with Countdown**
+**Problem**: Incomplete restart, no visual countdown feedback
+**Solution**: Complete regeneration with live countdown timer
+```javascript
+// ✅ Complete Reset Pattern
+resetGame() {
+    // Regenerate ALL blocks with new positions/colors
+    this.blocks = []
+    for (let i = 0; i < 20; i++) {
+        this.blocks.push({
+            x: Math.random() * (this.gameWidth - 50),
+            y: Math.random() * (this.gameHeight - 50),
+            color: `hsl(${Math.random() * 360}, 70%, 50%)`
+        })
+    }
+    
+    // Safe respawn all players using collision detection
+    this.players.forEach(player => {
+        const safePos = this.findSafeSpawnPosition()
+        player.x = safePos.x
+        player.y = safePos.y
+    })
+}
+
+// ✅ Countdown Display Pattern
+endGame(winner) {
+    let countdown = 4
+    const interval = setInterval(() => {
+        this.broadcast('gameRestarting', {
+            countdown, message: winnerMessage
+        })
+        countdown--
+        if (countdown < 0) clearInterval(interval)
+    }, 1000)
+}
+```
+
+### 🎨 UI/UX ENHANCEMENTS
+
+#### **Hub Color Coding System**
+**Implementation**: Intuitive color scheme for game availability
+- **Yellow**: 0 players (available but empty)
+- **Green**: Some players OR available (joinable states)  
+- **Red**: Full players (not joinable)
+
+```css
+/* ✅ Hub Color Pattern */
+.players-count.empty { color: #FFD700; }    /* Yellow 0/2 */
+.players-count.partial { color: #00ff88; }  /* Green 1/2 */
+.players-count.full { color: #ff4444; }     /* Red 2/2 */
+
+.status-available { color: #00ff88; }       /* Green AVAILABLE */
+.status-playing { color: #00ff88; }         /* Green PLAYING */
+.status-full { color: #ff4444; }           /* Red FULL */
+```
+
+### 🛡️ CRITICAL PATTERNS FOR FUTURE GAMES
+
+#### **Multiple End Game Prevention Pattern (CRITICAL)**
+```javascript
+// ✅ ALWAYS use this pattern for games with multiple win conditions
+constructor() {
+    this.gameEnded = false // Prevents restart loops
+}
+
+checkWinCondition() {
+    if (this.gameEnded) return // Block multiple triggers
+    if (winConditionMet && !this.gameEnded) {
+        this.endGame(winner)
+    }
+}
+```
+
+#### **Anti-Cheat Validation Pattern (CRITICAL)**
+```javascript
+// ✅ Always validate ALL player inputs, not just win conditions
+checkWin(player) {
+    // First check if player has ANY invalid inputs
+    if (this.hasInvalidInputs(player)) {
+        return { success: false, reason: 'Invalid inputs detected' }
+    }
+    // Then check win condition
+    return this.checkWinCondition(player)
+}
+```
+
+#### **Progressive Difficulty Pattern**
+```javascript
+// ✅ Prevent endless games with progressive difficulty
+onPaddleHit() {
+    this.ball.velocityX *= 1.02 // 2% speed increase
+    this.ball.velocityY *= 1.02
+    // After 50 hits: ~2.7x faster
+    // After 100 hits: ~7.2x faster
+}
+```
+
+### 🚫 NEVER DO THESE (Updated)
+
+1. **NEVER** allow multiple end game triggers (causes restart loops)
+2. **NEVER** trust client input without validation (enables cheating)
+3. **NEVER** make games endless without difficulty progression
+4. **NEVER** restart without regenerating all game elements
+5. **NEVER** use long visual cues that give unfair advantages
+
+### 📊 CURRENT GAME STATUS (All Enhanced)
+
+**Production Games (8)**: All enhanced with new mechanics
+- **Asteroids**: Dual win + restart fix  
+- **Pong**: Progressive speed + angle physics
+- **Bingo**: Anti-cheat + brief highlights
+- **Block**: Complete reset + countdown (in testing)
+- **Snake, Tic-Tac-Toe, Card War, Color Hunt, Simon Memory**: Stable
+
+### 🎯 KEY TAKEAWAY FOR FUTURE DEVELOPMENT
+**Today's fixes address critical gameplay balance, anti-cheat systems, and visual feedback. These patterns ensure fair play, engaging progression, and clear user communication. The restart loop fix is especially critical for preventing server instability.**

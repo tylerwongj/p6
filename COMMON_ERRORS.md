@@ -2,6 +2,210 @@
 
 This document tracks common issues encountered when setting up multiplayer games and their solutions.
 
+## 🚨 CRITICAL RECENT FIXES (2024-12-28): Game Balance & Anti-Cheat
+
+### Game Restart Issues
+
+#### Error: Infinite Restart Loops
+**Problem:** Game restarts multiple times in rapid succession
+**Root Cause:** Multiple win conditions triggering separate restart timers
+**Symptoms:**
+- "Game restarted" message appears multiple times
+- Players get reset repeatedly
+- Server console shows multiple restart logs
+- Game becomes unplayable due to constant resets
+
+**Fix:**
+```javascript
+// ❌ Problem: Multiple restart timers
+endGame(winner) {
+    setTimeout(() => this.resetGame(), 5000) // Timer 1
+}
+
+endGameAllDead(winner) {  
+    setTimeout(() => this.resetGame(), 5000) // Timer 2 - CONFLICT!
+}
+
+// ✅ Solution: Single restart flag + centralized reset
+constructor() {
+    this.gameEnded = false // Prevent multiple triggers
+}
+
+endGame(winner) {
+    if (this.gameEnded) return // Block if already ending
+    this.gameEnded = true
+    
+    setTimeout(() => this.resetGame(), 5000)
+}
+
+resetGame() {
+    this.gameEnded = false // Reset flag for next game
+    // ... reset logic
+}
+```
+
+**Games Affected:** Asteroids (fixed), any game with multiple win conditions
+
+### Anti-Cheat Issues
+
+#### Error: Players Can Win with Invalid Marks
+**Problem:** Players mark wrong numbers but still win bingo/similar games
+**Root Cause:** Win validation only checks patterns, not input validity
+**Symptoms:**
+- Players mark uncalled numbers and win
+- Unfair gameplay advantage
+- Other players frustrated by cheating
+
+**Fix:**
+```javascript
+// ❌ Problem: Only checking win patterns
+checkBingo(playerId) {
+    if (this.checkBingoPatterns(card, markedSpots)) {
+        // Player wins - but what if they marked wrong numbers?
+    }
+}
+
+// ✅ Solution: Validate ALL marks before checking win
+checkBingo(playerId) {
+    // First check if ANY marks are invalid
+    if (this.hasInvalidMarks(card, markedSpots)) {
+        this.sendToPlayer(playerId, 'invalidBingo', {
+            message: 'Card disqualified! Only mark called numbers.'
+        })
+        return
+    }
+    
+    // Then check win patterns
+    if (this.checkBingoPatterns(card, markedSpots)) {
+        // Valid win
+    }
+}
+```
+
+**Games Affected:** Bingo (fixed), any input validation game
+
+### Game Balance Issues
+
+#### Error: Games Drag On Forever
+**Problem:** No mechanism to prevent endless gameplay
+**Symptoms:**
+- Pong rallies lasting 10+ minutes
+- Players lose interest in long games
+- Server resources tied up in single games
+
+**Fix:**
+```javascript
+// ❌ Problem: Static game mechanics
+onPaddleHit() {
+    ball.velocityX = -ball.velocityX // Same speed forever
+}
+
+// ✅ Solution: Progressive difficulty
+onPaddleHit() {
+    ball.velocityX *= 1.02 // 2% speed increase each hit
+    ball.velocityY *= 1.02
+    // Naturally ends long games
+}
+```
+
+**Games Affected:** Pong (fixed), any competitive game
+
+### Visual Feedback Issues
+
+#### Error: Visual Cues Too Obvious/Brief
+**Problem:** Highlights either give unfair advantage or are missed entirely
+**Symptoms:**
+- Players get obvious advantage from long highlights
+- Players miss important visual cues
+- Unbalanced gameplay
+
+**Fix:**
+```javascript
+// ❌ Problem: Too obvious (2 seconds)
+cell.style.animation = 'highlight 2s ease-in-out'
+
+// ✅ Solution: Brief but fair (300ms)
+cell.style.animation = 'highlight 0.3s ease-in-out'
+// Miss it = your fault, not a free advantage
+```
+
+**Games Affected:** Bingo (fixed), any visual cue game
+
+### Hub Display Issues
+
+#### Error: "undefined/X players" in Game Hub
+**Problem:** Games show "undefined/4" instead of actual player count in hub listing
+**Root Cause:** Games using `Map` for players but BaseGame's `getPlayerCount()` expects Array
+**Symptoms:**
+- Hub shows "undefined/4 players" or "undefined/2 players"
+- Player count not updating properly
+- Games appear broken in hub interface
+
+**Fix:**
+```javascript
+// ❌ Problem: Using Map but inheriting Array-based getPlayerCount()
+export class GameName extends BaseGame {
+    constructor() {
+        super()
+        this.players = new Map() // Uses Map
+        // getPlayerCount() from BaseGame uses this.players.length = undefined
+    }
+}
+
+// ✅ Solution: Override getPlayerCount() for Map usage
+export class GameName extends BaseGame {
+    constructor() {
+        super()
+        this.players = new Map()
+    }
+    
+    getPlayerCount() {
+        return this.players.size // Use .size for Map, not .length
+    }
+}
+```
+
+**Games Affected:** Asteroids (fixed), any other games using Map for players
+
+### UX Issues
+
+#### Error: Can't Identify Player's Board/Cards
+**Problem:** In multiplayer games with multiple boards/cards, players can't tell which belongs to them
+**Symptoms:**
+- Players click wrong cards/boards
+- Confusion in multiplayer scenarios
+- Poor user experience
+
+**Fix Pattern:**
+```javascript
+// Client-side identification logic
+if (playerId === socket.id) {
+    cardDiv.classList.add('my-card') // Add identifying class
+}
+
+// Enhanced title with clear indicator
+const titlePrefix = isMyCard ? '🎯 YOUR CARDS: ' : ''
+cardTitle.textContent = titlePrefix + playerData.name
+```
+
+```css
+/* CSS highlighting for player's items */
+.bingo-card.my-card {
+    border: 4px solid #4caf50;
+    box-shadow: 0 0 30px rgba(76, 175, 80, 0.6);
+    background: linear-gradient(135deg, #ffffff, #f1f8e9);
+    transform: scale(1.02);
+}
+
+.bingo-card.my-card .card-title {
+    color: #2e7d32;
+    font-size: 1.3em;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+```
+
+**Games Fixed:** Bingo (implemented), pattern applies to all multi-board games
+
 ## 🔌 Socket.io & Connection Issues
 
 ### Error: Missing Socket.io Script
@@ -127,11 +331,11 @@ const PORT = process.env.PORT || 3004; // Tetris
 **Fix:**
 ```bash
 # ❌ Don't run from workspace root
-cd /Users/tyler/p6
+cd /Users/tyler/tyler-arcade
 npm start  # This doesn't start any game server
 
 # ✅ Run from individual game directory
-cd /Users/tyler/p6/games/snake
+cd /Users/tyler/tyler-arcade/games/snake
 npm start  # This starts the snake server
 ```
 
@@ -431,11 +635,11 @@ When a game doesn't work:
 **Fix:**
 ```bash
 # ✅ Always check existing games first
-ls /Users/tyler/p6/games-not-yet-tested | grep -i mastermind
+ls /Users/tyler/tyler-arcade/games-not-yet-tested | grep -i mastermind
 # If exists, pick different name like "codebreaker" instead
 
 # ✅ Check for similar names to avoid confusion
-ls /Users/tyler/p6/games-not-yet-tested | grep -i "battle"
+ls /Users/tyler/tyler-arcade/games-not-yet-tested | grep -i "battle"
 # battleship, battleships, battleships-new, etc.
 ```
 
@@ -1761,7 +1965,7 @@ export class BaccaratGame extends BaseGame {
 - Checked for DOM element existence and proper IDs
 
 **Decision:** Game moved to `/games-failed/` for future debugging
-**Location:** `/Users/tyler/p6/games-failed/card-war/`
+**Location:** `/Users/tyler/tyler-arcade/games-failed/card-war/`
 **Status:** Abandoned temporarily due to persistent UI issues
 
 *Last updated: Current session - card-war moved to games-failed, 6 working games remain*
