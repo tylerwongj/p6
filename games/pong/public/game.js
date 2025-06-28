@@ -18,6 +18,9 @@ class PongGame {
     this.playerId = null
     this.playerName = ''
     this.gameState = null
+    this.winMessage = null
+    this.resetMessage = null
+    this.resetMessageTimer = 0
     
     this.setupSocket()
     this.setupInput()
@@ -68,6 +71,22 @@ class PongGame {
       console.error('Pong: Socket connection error:', error)
     })
 
+    this.socket.on('gameWon', (winner) => {
+      console.log('Game won by:', winner)
+      this.showWinMessage(winner)
+    })
+
+    this.socket.on('scoresReset', (data) => {
+      console.log('Scores reset:', data.message)
+      this.showResetMessage(data.message)
+    })
+
+    this.socket.on('gameRestarted', (data) => {
+      console.log('Game restarted:', data.message)
+      this.showResetMessage(data.message)
+      this.winMessage = null // Clear win message
+    })
+
     this.socket.on('disconnect', () => {
       console.log('Pong: Disconnected from server')
       this.gameState = null
@@ -86,11 +105,14 @@ class PongGame {
   }
 
   setupInput() {
-    // Handle 0 key for starting ball
+    // Handle 0 key for starting ball and R key for reset scores
     this.input.on('keydown', (e, key) => {
       if (key === '0') {
         e.preventDefault()
         this.socket.emit('startBall')
+      } else if (key === 'r' || key === 'R') {
+        e.preventDefault()
+        this.socket.emit('resetScores')
       }
     })
 
@@ -114,6 +136,14 @@ class PongGame {
     // Ensure deltaTime is a valid number to prevent render issues
     if (typeof deltaTime !== 'number' || isNaN(deltaTime)) {
       return
+    }
+    
+    // Update reset message timer
+    if (this.resetMessageTimer > 0) {
+      this.resetMessageTimer -= deltaTime * 1000
+      if (this.resetMessageTimer <= 0) {
+        this.resetMessage = null
+      }
     }
   }
 
@@ -167,6 +197,17 @@ class PongGame {
       const score2 = typeof player2.score === 'number' ? player2.score : 0
       this.renderer.drawText(score1.toString(), 200, 50, '#fff', '36px Arial')
       this.renderer.drawText(score2.toString(), 600, 50, '#fff', '36px Arial')
+      
+      // Show win message if game ended
+      if (this.gameState.gameEnded && this.winMessage) {
+        this.renderer.drawText(this.winMessage, 400, 150, '#ffff00', '24px Arial')
+        this.renderer.drawText('Press R to reset scores', 400, 180, '#ccc', '16px Arial')
+      }
+      
+      // Show temporary reset message
+      if (this.resetMessage && this.resetMessageTimer > 0) {
+        this.renderer.drawText(this.resetMessage, 400, 300, '#00ff00', '18px Arial')
+      }
 
       // Draw player names
       if (this.gameState.players) {
@@ -183,6 +224,18 @@ class PongGame {
       this.renderer.clear()
       this.renderer.drawText('Error loading game...', 350, 200, '#fff', '24px Arial')
     }
+  }
+  
+  showWinMessage(winner) {
+    this.winMessage = `${winner.playerName} wins! (${winner.score} points)`
+  }
+  
+  showResetMessage(message) {
+    this.resetMessage = message
+    this.resetMessageTimer = 3000 // Show for 3 seconds
+    
+    // Clear win message when scores are reset
+    this.winMessage = null
   }
 
   updateUI() {

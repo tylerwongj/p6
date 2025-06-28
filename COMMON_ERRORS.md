@@ -1927,4 +1927,219 @@ socket.emit('joinGame', {
 4. Goal: Mark 5 squares in a row (any direction)
 5. Click "BINGO!" button when you have a line
 
-*Last updated: Latest session errors documented - server stability issues with chess game critical*
+## 🎯 4-Card Bingo Implementation Pattern
+
+### Problem: Single Card vs Multi-Card Bingo
+**Request**: Convert standard bingo from single card to 4-card layout requiring all cards filled
+**Implementation Challenges**:
+- Server data structure changes (single card → array of 4 cards)
+- Client UI layout changes (single grid → 2x2 grid layout)
+- Marking system changes (single markedSpots Set → array of 4 Sets)
+- Win condition changes (any line → all 4 cards completely filled)
+
+### Server-Side Changes Applied:
+```javascript
+// ✅ Before: Single card generation
+this.gameState.players[socketId] = {
+  card: this.generateBingoCard(),
+  markedSpots: new Set()
+}
+
+// ✅ After: 4-card generation
+this.gameState.players[socketId] = {
+  cards: this.generateFourCards(),  // Array of 4 cards
+  markedSpots: [new Set(), new Set(), new Set(), new Set()]  // Array of 4 Sets
+}
+
+// ✅ Method Addition
+generateFourCards() {
+  return [
+    this.generateBingoCard(),
+    this.generateBingoCard(), 
+    this.generateBingoCard(),
+    this.generateBingoCard()
+  ]
+}
+```
+
+### Marking System Changes:
+```javascript
+// ✅ Before: Single card marking
+markSpot(playerId, row, col) {
+  player.markedSpots.add(`${row}-${col}`)
+}
+
+// ✅ After: Multi-card marking with card index
+markSpot(playerId, cardIndex, row, col) {
+  player.markedSpots[cardIndex].add(`${row}-${col}`)
+}
+
+// ✅ Input handler update
+socket.emit('playerInput', {
+  action: 'markSpot',
+  cardIndex: cardIndex,  // NEW: Specify which card
+  row: row,
+  col: col
+})
+```
+
+### Win Condition Changes:
+```javascript
+// ✅ Before: Check standard bingo patterns (lines, diagonals)
+checkBingoPatterns(card, markedSpots) {
+  // Check rows, columns, diagonals for any complete line
+}
+
+// ✅ After: Check all 4 cards completely filled
+checkAllCardsFilled(cards, markedSpots) {
+  for (let cardIndex = 0; cardIndex < 4; cardIndex++) {
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 5; col++) {
+        if (row === 2 && col === 2) continue // Skip FREE space
+        const spotId = `${row}-${col}`
+        if (!markedSpots[cardIndex].has(spotId)) {
+          return false // Card not completely filled
+        }
+      }
+    }
+  }
+  return true // All 4 cards completely filled
+}
+```
+
+### Client-Side UI Layout Changes:
+```javascript
+// ✅ HTML Structure Change
+// Before: Single card container
+<div class="bingo-card" id="bingoCard">
+  <div class="card-grid" id="cardGrid"></div>
+</div>
+
+// After: 4-card container with 2x2 grid
+<div class="cards-container" id="cardsContainer">
+  <!-- Four cards generated dynamically -->
+</div>
+
+// ✅ CSS Layout Addition
+.cards-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;  // 2x2 layout
+  gap: 15px;
+  max-width: 800px;
+}
+```
+
+### Client-Side Rendering Changes:
+```javascript
+// ✅ Before: Single card rendering
+function updateBingoCard() {
+  if (!myCard) return
+  // Render single 5x5 grid
+}
+
+// ✅ After: 4-card rendering
+function updateBingoCard() {
+  if (!myCards || !Array.isArray(myCards) || myCards.length !== 4) return
+  
+  cardsContainerEl.innerHTML = ''
+  
+  // Create all 4 cards
+  for (let cardIndex = 0; cardIndex < 4; cardIndex++) {
+    const cardDiv = document.createElement('div')
+    cardDiv.className = 'bingo-card'
+    
+    // Add card title: "Card 1", "Card 2", etc.
+    const cardTitle = document.createElement('div')
+    cardTitle.textContent = `Card ${cardIndex + 1}`
+    
+    // Generate 5x5 grid for this card
+    // Include cardIndex in click handlers: markSpot(cardIndex, row, col)
+  }
+}
+```
+
+### Game State Broadcasting Changes:
+```javascript
+// ✅ Before: Single card broadcast
+broadcastGameState() {
+  const personalState = {
+    myCard: player.card,
+    myMarkedSpots: Array.from(player.markedSpots)
+  }
+}
+
+// ✅ After: Multi-card broadcast
+broadcastGameState() {
+  const personalState = {
+    myCards: player.cards,  // Array of 4 cards
+    myMarkedSpots: player.markedSpots.map(set => Array.from(set))  // Array of arrays
+  }
+}
+```
+
+### Client State Management Changes:
+```javascript
+// ✅ Before: Single card variables
+let myCard = null
+let myMarkedSpots = new Set()
+
+// ✅ After: Multi-card variables
+let myCards = null
+let myMarkedSpots = [new Set(), new Set(), new Set(), new Set()]
+
+// ✅ Game state handler update
+socket.on('gameState', (state) => {
+  myCards = state.myCards
+  if (state.myMarkedSpots) {
+    myMarkedSpots = state.myMarkedSpots.map(spots => new Set(spots))
+  }
+})
+```
+
+### Number Highlighting Changes:
+```javascript
+// ✅ Before: Highlight in single card
+function highlightMatchingNumbers(calledNumber) {
+  const cells = cardGridEl.children
+  // Check single card for matches
+}
+
+// ✅ After: Highlight across all 4 cards
+function highlightMatchingNumbers(calledNumber) {
+  const cardElements = cardsContainerEl.children
+  
+  // Check each of the 4 cards for matching numbers
+  for (let cardIndex = 0; cardIndex < 4; cardIndex++) {
+    const gridElement = cardElements[cardIndex].querySelector('.card-grid')
+    const cells = gridElement.children
+    const card = myCards[cardIndex]
+    
+    // Check all cells in this card for matches
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 5; col++) {
+        if (card[columns[col]][row] === calledNumber) {
+          // Highlight matching cell
+        }
+      }
+    }
+  }
+}
+```
+
+### UI/UX Changes Applied:
+- **Game Info**: Changed from "Multiplayer Bingo Game" to "4-Card Bingo - Fill ALL 4 cards to win!"
+- **Card Sizing**: Reduced cell size from 60px to 50px to fit 4 cards on screen
+- **Card Layout**: 2x2 grid layout with 15px gap between cards
+- **Card Titles**: Each card labeled "Card 1", "Card 2", "Card 3", "Card 4"
+- **Instructions**: Updated controls text to explain filling all 4 cards requirement
+
+### Result Pattern:
+This 4-card bingo implementation provides a much more challenging and engaging bingo experience where players must:
+1. Track 4 different cards simultaneously (top-left to bottom-right layout)
+2. Mark numbers across all cards as they're called
+3. Fill every non-FREE space on all 4 cards to win
+4. Strategically manage attention across multiple cards
+
+**Testing**: Successfully implemented and tested - players can mark spots on all 4 cards and win condition requires complete filling of all cards.
+
+*Last updated: Latest session errors documented - 4-card bingo implementation pattern added*

@@ -3,275 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic-Tac-Toe - Tyler Arcade</title>
+    <title>Game Moved - Tyler Arcade</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
             background: #1a1a1a;
             color: #ffffff;
             font-family: 'Arial', sans-serif;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            overflow: hidden;
-        }
-
-        .game-container {
             text-align: center;
+        }
+        .message {
             background: #2a2a2a;
+            padding: 40px;
             border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             max-width: 500px;
-            width: 90vw;
         }
-
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .game-info {
-            margin-bottom: 20px;
-            font-size: 1.1rem;
-        }
-
-        .current-player {
-            color: #4ecdc4;
-            font-weight: bold;
-        }
-
-        .game-board {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-gap: 8px;
-            margin: 20px auto;
-            max-width: 300px;
-            background: #333;
-            padding: 8px;
-            border-radius: 10px;
-        }
-
-        .cell {
-            aspect-ratio: 1;
-            background: #4a4a4a;
-            border: none;
-            border-radius: 8px;
-            font-size: 2rem;
-            font-weight: bold;
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .cell:hover:not(.filled) {
-            background: #5a5a5a;
-            transform: scale(1.05);
-        }
-
-        .cell.filled {
-            cursor: not-allowed;
-        }
-
-        .cell.x {
-            color: #ff6b6b;
-        }
-
-        .cell.o {
-            color: #4ecdc4;
-        }
-
-        .players-list {
-            margin: 20px 0;
-            font-size: 0.9rem;
-        }
-
-        .player {
-            margin: 5px 0;
-            padding: 5px 10px;
-            background: #3a3a3a;
-            border-radius: 5px;
-            display: inline-block;
-            margin-right: 10px;
-        }
-
-        .winner-announcement {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin: 20px 0;
-            padding: 15px;
-            border-radius: 10px;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            color: #000;
-        }
-
-        .controls {
-            margin-top: 20px;
-        }
-
-        button {
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            color: #000;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin: 0 10px;
-            transition: transform 0.2s ease;
-        }
-
-        button:hover {
-            transform: scale(1.05);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .join-overlay {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: transparent;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 500;
-        }
-
-        .join-form {
-            background: #2a2a2a;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-        }
-
-        .join-form h2 {
-            margin-bottom: 20px;
-            color: #4ecdc4;
-        }
-
-        .join-form input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 2px solid #4a4a4a;
-            border-radius: 8px;
-            background: #3a3a3a;
-            color: #fff;
-            font-size: 1rem;
-        }
-
-        .join-form input:focus {
-            outline: none;
-            border-color: #4ecdc4;
-        }
-
-        .waiting-message {
-            color: #ff6b6b;
-            font-style: italic;
-            margin: 10px 0;
-        }
-
-        .spectator-badge {
-            background: #666;
-            color: #ccc;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            margin-left: 5px;
-        }
-
-        .back-button {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            padding: 10px 15px;
-            background: #333;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 5px;
-            border: 1px solid #555;
-            font-family: inherit;
-            font-size: 14px;
-            z-index: 1000;
-            transition: background 0.2s ease;
-        }
-        
-        .back-button:hover {
-            background: #555;
-            color: #fff;
-        }
-        
-        .back-button:visited {
-            color: #fff;
-        }
+        h1 { color: #ff6b6b; margin-bottom: 20px; }
+        a { color: #4ecdc4; text-decoration: none; }
+        a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-    <a href="/" class="back-button">← Back to Hub</a>
-    
-    <div class="game-container">
-        <h1>Tic-Tac-Toe</h1>
-        
-        <div class="game-info">
-            <div id="gameStatus">Waiting for players...</div>
-            <div id="currentTurn" style="display: none;">
-                Current turn: <span class="current-player" id="currentPlayer">X</span>
-            </div>
-        </div>
-
-        <div class="game-board" id="gameBoard">
-            <button class="cell" data-position="0"></button>
-            <button class="cell" data-position="1"></button>
-            <button class="cell" data-position="2"></button>
-            <button class="cell" data-position="3"></button>
-            <button class="cell" data-position="4"></button>
-            <button class="cell" data-position="5"></button>
-            <button class="cell" data-position="6"></button>
-            <button class="cell" data-position="7"></button>
-            <button class="cell" data-position="8"></button>
-        </div>
-
-        <div id="winnerAnnouncement" class="winner-announcement" style="display: none;"></div>
-
-        <div class="players-list">
-            <div>Players:</div>
-            <div id="playersList"></div>
-        </div>
-
-        <div class="controls">
-            <button id="resetButton" onclick="resetGame()" disabled>New Game</button>
-        </div>
+    <div class="message">
+        <h1>Game Moved</h1>
+        <p>Tic-Tac-Toe has been moved to the failed games folder due to a persistent top-left square click issue.</p>
+        <p>The complete game files are now located in <code>games-failed/tic-tac-toe/</code></p>
+        <p><a href="/">← Back to Hub</a></p>
     </div>
-
-    <div class="controls" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); text-align: center; color: #ccc; font-size: 14px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px;">
-        <strong>Controls:</strong> Click squares to make moves | Reset button for new game
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/shared.js"></script>
-    <script type="module" src="game.js"></script>
 </body>
 </html>

@@ -86,7 +86,19 @@
         }
         
         .players-count {
-            color: #00ff88;
+            font-weight: bold;
+        }
+        
+        .players-count.empty {
+            color: #FFD700; /* Yellow for 0 players */
+        }
+        
+        .players-count.partial {
+            color: #00ff88; /* Green for some players */
+        }
+        
+        .players-count.full {
+            color: #ff4444; /* Red for full */
         }
         
         .status-badge {
@@ -97,13 +109,18 @@
         }
         
         .status-available {
+            background: rgba(255, 215, 0, 0.2);
+            color: #FFD700; /* Yellow for available */
+        }
+        
+        .status-playing {
             background: rgba(0, 255, 136, 0.2);
-            color: #00ff88;
+            color: #00ff88; /* Green for playing */
         }
         
         .status-full {
-            background: rgba(255, 136, 0, 0.2);
-            color: #ff8800;
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444; /* Red for full */
         }
         
         .loading {

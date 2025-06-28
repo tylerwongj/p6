@@ -16,12 +16,18 @@ class BlockGame {
     this.playerName = ''
     this.gameState = null
     this.myPlayer = null
+    this.isSpectator = false
     this.inputState = {
       left: false,
       right: false,
       up: false,
       down: false
     }
+    
+    // Winner message display
+    this.showWinnerMessage = false
+    this.winnerMessage = null
+    this.countdown = null
     
     this.setupSocket()
     this.setupInput()
@@ -67,8 +73,15 @@ class BlockGame {
     this.socket.on('playerAssigned', (data) => {
       this.playerId = data.playerId
       this.playerName = data.playerName
-      document.getElementById('scoreboard').style.display = 'block'
-      console.log(`Assigned as Player: ${this.playerName}`)
+      this.isSpectator = data.isSpectator || false
+      
+      if (this.isSpectator) {
+        console.log(`Joined as spectator: ${this.playerName}`)
+        document.getElementById('gameInfo').textContent = '👁️ Spectating - Game is full'
+      } else {
+        console.log(`Assigned as Player: ${this.playerName}`)
+        document.getElementById('scoreboard').style.display = 'block'
+      }
     })
 
     this.socket.on('joinFailed', (data) => {
@@ -80,7 +93,28 @@ class BlockGame {
     })
 
     this.socket.on('gameEnded', (data) => {
-      console.log('Game ended:', data.reason)
+      console.log('Game ended:', data)
+      // Store winner message to display on screen
+      if (data.winner) {
+        this.winnerMessage = data.message
+        this.countdown = data.countdown || 5
+        this.showWinnerMessage = true
+        
+        // Hide winner message after 5 seconds
+        setTimeout(() => {
+          this.showWinnerMessage = false
+          this.winnerMessage = null
+          this.countdown = null
+        }, 5000)
+      }
+    })
+
+    this.socket.on('gameRestarting', (data) => {
+      console.log('Game restarting countdown:', data)
+      // Update countdown display
+      if (this.showWinnerMessage) {
+        this.countdown = data.countdown
+      }
     })
 
     this.socket.on('gameReset', (data) => {
@@ -143,9 +177,9 @@ class BlockGame {
       }
     })
 
-    // Send input to server
+    // Send input to server (only if not spectator)
     setInterval(() => {
-      if (this.playerId && this.myPlayer) {
+      if (this.playerId && this.myPlayer && !this.isSpectator) {
         // Debug: Log when input is being sent
         const hasInput = this.inputState.left || this.inputState.right || this.inputState.up || this.inputState.down
         if (hasInput) {
@@ -260,8 +294,8 @@ class BlockGame {
           player.height
         )
         
-        // Highlight current player
-        if (player.id === this.playerId) {
+        // Highlight current player (not for spectators)
+        if (player.id === this.playerId && !this.isSpectator) {
           ctx.strokeStyle = '#fff'
           ctx.lineWidth = 2
           ctx.strokeRect(
@@ -290,7 +324,46 @@ class BlockGame {
       ctx.fillStyle = '#fff'
       ctx.font = '20px Arial'
       ctx.textAlign = 'center'
-      ctx.fillText('Waiting for players...', 400, 100)
+      ctx.fillText('Waiting for players...', 400, 300)
+    }
+    
+    // Scores moved to HTML UI - no longer drawn on canvas
+    
+    // Draw winner message overlay if game ended
+    if (this.showWinnerMessage && this.winnerMessage) {
+      // Draw semi-transparent overlay
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'
+      ctx.fillRect(0, 0, 800, 600)
+      
+      // Draw winner message
+      ctx.fillStyle = '#FFD700'
+      ctx.font = 'bold 36px Arial'
+      ctx.textAlign = 'center'
+      ctx.fillText('🏆 GAME OVER!', 400, 250)
+      
+      ctx.fillStyle = '#fff'
+      ctx.font = 'bold 24px Arial'
+      ctx.fillText(this.winnerMessage, 400, 300)
+      
+      // Draw countdown with large number
+      if (this.countdown !== null) {
+        ctx.font = '18px Arial'
+        ctx.fillStyle = '#ccc'
+        ctx.fillText(`Game restarting in`, 400, 330)
+        
+        // Large countdown number
+        ctx.font = 'bold 48px Arial'
+        ctx.fillStyle = this.countdown <= 1 ? '#FF4444' : '#FFD700'
+        ctx.fillText(this.countdown.toString(), 400, 380)
+        
+        ctx.font = '18px Arial'
+        ctx.fillStyle = '#ccc'
+        ctx.fillText('seconds...', 400, 410)
+      } else {
+        ctx.font = '18px Arial'
+        ctx.fillStyle = '#ccc'
+        ctx.fillText('Game restarting in 5 seconds...', 400, 350)
+      }
     }
     
     // Debug: Draw a test rectangle to ensure rendering works
@@ -371,30 +444,40 @@ class BlockGame {
   updateUI() {
     const gameInfo = document.getElementById('gameInfo')
     const scoreList = document.getElementById('scoreList')
+    const scoreboard = document.getElementById('scoreboard')
     
     if (!this.gameState) return
 
     const playerCount = Array.isArray(this.gameState.players) ? this.gameState.players.length : 0
+    const spectatorCount = Array.isArray(this.gameState.spectators) ? this.gameState.spectators.length : 0
     
-    if (playerCount === 0) {
+    // Show spectator status if user is spectating
+    if (this.isSpectator) {
+      gameInfo.textContent = `👁️ Spectating (${spectatorCount} spectators) - Game is full`
+      scoreboard.style.display = 'block' // Show scoreboard for spectators too
+    } else if (playerCount === 0) {
       gameInfo.textContent = 'Waiting for players...'
+      scoreboard.style.display = 'none'
     } else if (playerCount === 1) {
       gameInfo.textContent = 'Waiting for more players...'
+      scoreboard.style.display = 'none'
     } else if (this.gameState.gameStarted) {
-      gameInfo.textContent = `${playerCount} players - Game in progress!`
+      const spectatorText = spectatorCount > 0 ? ` (${spectatorCount} watching)` : ''
+      gameInfo.textContent = `🏆 First to 100 points wins!${spectatorText}`
+      scoreboard.style.display = 'block'
     } else {
-      gameInfo.textContent = `${playerCount} players ready`
+      const spectatorText = spectatorCount > 0 ? ` (${spectatorCount} watching)` : ''
+      gameInfo.textContent = `${playerCount} players ready${spectatorText}`
+      scoreboard.style.display = 'block'
     }
 
-    // Update scoreboard
-    if (this.gameState.leaderboard && scoreList && Array.isArray(this.gameState.players)) {
-      scoreList.innerHTML = this.gameState.leaderboard.map(entry => {
-        const player = this.gameState.players.find(p => p.socketId === entry.playerId)
-        const playerName = player ? player.name : 'Unknown'
-        const isCurrentPlayer = entry.playerId === this.playerId
+    // Update scoreboard with current scores
+    if (scoreList && Array.isArray(this.gameState.players) && playerCount > 0) {
+      scoreList.innerHTML = this.gameState.players.map(player => {
+        const isCurrentPlayer = player.id === this.playerId && !this.isSpectator
         
         return `<div class="score-entry ${isCurrentPlayer ? 'current-player' : ''}">
-          ${playerName}: ${entry.score}
+          ${player.name}: ${player.score}/100
         </div>`
       }).join('')
     }

@@ -96,6 +96,10 @@ export class PongGame extends BaseGame {
   handleCustomEvent(socketId, eventName, args, socket) {
     if (eventName === 'startBall') {
       this.gameState.resetBall()
+    } else if (eventName === 'resetScores') {
+      this.gameState.resetScores()
+      // Broadcast reset message to all players
+      this.broadcast('scoresReset', { message: 'Scores reset to 0-0!' })
     }
   }
 
@@ -112,12 +116,25 @@ export class PongGame extends BaseGame {
       
       this.gameState.update(deltaTime)
       
+      // Check for winner
+      const winner = this.gameState.checkWinner()
+      if (winner) {
+        this.broadcast('gameWon', winner)
+        
+        // Auto-restart after 3 seconds
+        setTimeout(() => {
+          this.gameState.resetScores()
+          this.broadcast('gameRestarted', { message: 'New game started!' })
+        }, 3000)
+      }
+      
       // Broadcast game state to all Pong players
       this.broadcast('gameState', {
         ball: this.gameState.ball,
         player1: this.gameState.player1,
         player2: this.gameState.player2,
-        players: this.gameState.players
+        players: this.gameState.players,
+        gameEnded: this.gameState.gameEnded
       })
     }, 1000 / 60) // 60 FPS
   }
@@ -182,6 +199,9 @@ class PongGameState {
       velocityY: 0
     }
     this.paddleSpeed = 400
+    this.gameEnded = false
+    this.winner = null
+    this.winningScore = 5
   }
 
   update(deltaTime) {
@@ -212,7 +232,19 @@ class PongGameState {
     // Left paddle collision
     if (CollisionDetection.circleRectCollision(ballCircle, paddle1Rect) && this.ball.velocityX < 0) {
       this.ball.velocityX = -this.ball.velocityX
-      this.ball.velocityY += this.player1.velocityY * 0.1
+      
+      // Calculate angle based on where ball hits paddle
+      const paddleCenter = this.player1.y + this.player1.height / 2
+      const hitOffset = this.ball.y - paddleCenter
+      const normalizedOffset = hitOffset / (this.player1.height / 2) // -1 to 1
+      
+      // Apply angle variation: top = negative angle, bottom = positive angle
+      this.ball.velocityY = normalizedOffset * 250 + this.player1.velocityY * 0.3
+      
+      // Increase ball speed by 2% each hit to prevent long games
+      this.ball.velocityX *= 1.02
+      this.ball.velocityY *= 1.02
+      
       // Keep ball from getting stuck
       this.ball.x = this.player1.x + this.player1.width + this.ball.radius
     }
@@ -220,7 +252,19 @@ class PongGameState {
     // Right paddle collision  
     if (CollisionDetection.circleRectCollision(ballCircle, paddle2Rect) && this.ball.velocityX > 0) {
       this.ball.velocityX = -this.ball.velocityX
-      this.ball.velocityY += this.player2.velocityY * 0.1
+      
+      // Calculate angle based on where ball hits paddle
+      const paddleCenter = this.player2.y + this.player2.height / 2
+      const hitOffset = this.ball.y - paddleCenter
+      const normalizedOffset = hitOffset / (this.player2.height / 2) // -1 to 1
+      
+      // Apply angle variation: top = negative angle, bottom = positive angle
+      this.ball.velocityY = normalizedOffset * 250 + this.player2.velocityY * 0.3
+      
+      // Increase ball speed by 2% each hit to prevent long games
+      this.ball.velocityX *= 1.02
+      this.ball.velocityY *= 1.02
+      
       // Keep ball from getting stuck
       this.ball.x = this.player2.x - this.ball.radius
     }
@@ -240,6 +284,38 @@ class PongGameState {
     this.ball.y = 200
     this.ball.velocityX = Math.random() > 0.5 ? 300 : -300
     this.ball.velocityY = (Math.random() - 0.5) * 200
+  }
+
+  resetScores() {
+    this.player1.score = 0
+    this.player2.score = 0
+    this.gameEnded = false
+    this.winner = null
+    this.resetBall()
+  }
+
+  checkWinner() {
+    if (this.gameEnded) return null
+    
+    if (this.player1.score >= this.winningScore) {
+      this.gameEnded = true
+      this.winner = {
+        playerId: 1,
+        playerName: this.players[0] ? this.players[0].name : 'Player 1',
+        score: this.player1.score
+      }
+      return this.winner
+    } else if (this.player2.score >= this.winningScore) {
+      this.gameEnded = true
+      this.winner = {
+        playerId: 2,
+        playerName: this.players[1] ? this.players[1].name : 'Player 2',
+        score: this.player2.score
+      }
+      return this.winner
+    }
+    
+    return null
   }
 
   setPlayerInput(playerId, input) {

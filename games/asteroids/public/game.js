@@ -39,9 +39,13 @@ function connectToServer() {
     socket.on('gameState', (state) => {
         gameState = state;
         
-        // Find my player
-        if (playerName && state.players && Array.isArray(state.players)) {
-            myPlayer = state.players.find(p => p.name === playerName);
+        // Find my player by playerId (more reliable than name)
+        if (playerId && state.players && Array.isArray(state.players)) {
+            myPlayer = state.players.find(p => p.socketId === playerId);
+            // Fallback to name if socketId doesn't match
+            if (!myPlayer && playerName) {
+                myPlayer = state.players.find(p => p.name === playerName);
+            }
         }
         
         updateUI();
@@ -49,6 +53,11 @@ function connectToServer() {
 
     socket.on('playerLeft', (data) => {
         console.log('Player left');
+    });
+    
+    socket.on('gameWinner', (data) => {
+        // Show winner overlay
+        showWinnerMessage(data.message);
     });
 }
 
@@ -106,8 +115,15 @@ document.addEventListener('keyup', (e) => {
 
 // Send input to server
 setInterval(() => {
-    if (socket && playerName && myPlayer && myPlayer.alive) {
+    if (socket && playerId && myPlayer && myPlayer.alive) {
         socket.emit('playerInput', inputState);
+    }
+    // Debug: log when we can't send input
+    else if (socket && playerId && myPlayer && !myPlayer.alive) {
+        // Player is dead, expected behavior
+    }
+    else if (socket && playerId && !myPlayer) {
+        console.warn('Cannot send input: myPlayer not found');
     }
 }, 1000 / 60); // 60 FPS input
 
@@ -169,8 +185,16 @@ function drawPlayer(player) {
     ctx.translate(player.x, player.y);
     ctx.rotate(player.rotation);
     
-    // Draw ship
-    ctx.strokeStyle = player.socketId === playerId ? '#0ff' : '#fff';
+    // Draw ship with invulnerability flashing
+    let shipColor = player.socketId === playerId ? '#0ff' : '#fff';
+    if (player.invulnerable) {
+        // Flash during invulnerability
+        const flashSpeed = 8; // flashes per second
+        const flashPhase = (Date.now() / (1000 / flashSpeed)) % 1;
+        shipColor = flashPhase < 0.5 ? shipColor : '#888';
+    }
+    
+    ctx.strokeStyle = shipColor;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(15, 0);
@@ -274,8 +298,40 @@ function updateUI() {
     if (playerCount === 0) {
         gameInfo.textContent = 'Waiting for players...';
     } else {
-        gameInfo.textContent = `${playerCount} players in game`;
+        gameInfo.textContent = `${playerCount} players in game - First to 500 points wins!`;
     }
+}
+
+function showWinnerMessage(message) {
+    // Create minimal top banner instead of full overlay
+    const banner = document.createElement('div');
+    banner.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(0, 0, 0, 0.1);
+        color: #FFD700;
+        text-align: center;
+        z-index: 1000;
+        font-family: Arial, sans-serif;
+        padding: 15px 0;
+        font-size: 24px;
+        font-weight: bold;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        border-bottom: 2px solid #FFD700;
+    `;
+    
+    banner.innerHTML = `🏆 ${message} - New game starting in 5 seconds...`;
+    
+    document.body.appendChild(banner);
+    
+    // Remove banner after 5 seconds
+    setTimeout(() => {
+        if (document.body.contains(banner)) {
+            document.body.removeChild(banner);
+        }
+    }, 5000);
 }
 
 // Animation loop

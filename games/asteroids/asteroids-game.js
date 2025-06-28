@@ -16,6 +16,7 @@ export class AsteroidsGame extends BaseGame {
         this.gameWidth = 800;
         this.gameHeight = 600;
         this.gameStarted = false;
+        this.gameEnded = false;
         
         this.spawnAsteroids();
     }
@@ -42,7 +43,10 @@ export class AsteroidsGame extends BaseGame {
             lives: 3,
             score: 0,
             thrusting: false,
-            lastShotTime: 0
+            lastShotTime: 0,
+            respawning: false,
+            invulnerable: false,
+            invulnerableTime: 0
         };
 
         this.players.set(socketId, player);
@@ -71,37 +75,73 @@ export class AsteroidsGame extends BaseGame {
         
         switch (eventName) {
             case 'resetGame':
-                // Reset player stats but keep them in game
-                const player = this.players.get(socketId);
-                if (player) {
-                    player.lives = 3;
-                    player.score = 0;
-                    player.alive = true;
-                    player.x = this.gameWidth / 2;
-                    player.y = this.gameHeight / 2;
-                    player.velocityX = 0;
-                    player.velocityY = 0;
-                    player.rotation = 0;
-                    player.lastShotTime = 0;
-                }
+                this.resetGame();
+                console.log('Asteroids game reset by player');
                 break;
         }
     }
 
     spawnAsteroids() {
         this.asteroids = [];
-        for (let i = 0; i < 5; i++) {
-            this.asteroids.push({
-                id: i,
-                x: Math.random() * this.gameWidth,
-                y: Math.random() * this.gameHeight,
-                velocityX: (Math.random() - 0.5) * 100,
-                velocityY: (Math.random() - 0.5) * 100,
-                radius: 40 + Math.random() * 20,
-                rotation: 0,
-                rotationSpeed: (Math.random() - 0.5) * 4
-            });
+        // 25% more asteroids (5 → 6)
+        for (let i = 0; i < 6; i++) {
+            this.spawnSingleAsteroid(i);
         }
+    }
+    
+    spawnSingleAsteroid(id) {
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while (attempts < maxAttempts) {
+            const x = Math.random() * this.gameWidth;
+            const y = Math.random() * this.gameHeight;
+            const radius = 40 + Math.random() * 20;
+            
+            // Check if too close to any player
+            let tooClose = false;
+            for (const player of this.players.values()) {
+                const distance = Math.sqrt((x - player.x) ** 2 + (y - player.y) ** 2);
+                if (distance < radius + 100) { // 100px safety buffer
+                    tooClose = true;
+                    break;
+                }
+            }
+            
+            if (!tooClose) {
+                // Variable speeds: 25% slow, 50% normal, 25% fast
+                const speedMultiplier = Math.random() < 0.25 ? 0.6 : 
+                                      Math.random() < 0.75 ? 1.0 : 1.5;
+                
+                this.asteroids.push({
+                    id: id,
+                    x: x,
+                    y: y,
+                    velocityX: (Math.random() - 0.5) * 100 * speedMultiplier,
+                    velocityY: (Math.random() - 0.5) * 100 * speedMultiplier,
+                    radius: radius,
+                    rotation: 0,
+                    rotationSpeed: (Math.random() - 0.5) * 4
+                });
+                return;
+            }
+            attempts++;
+        }
+        
+        // Fallback: spawn anyway if can't find safe spot
+        const speedMultiplier = Math.random() < 0.25 ? 0.6 : 
+                              Math.random() < 0.75 ? 1.0 : 1.5;
+        
+        this.asteroids.push({
+            id: id,
+            x: Math.random() * this.gameWidth,
+            y: Math.random() * this.gameHeight,
+            velocityX: (Math.random() - 0.5) * 100 * speedMultiplier,
+            velocityY: (Math.random() - 0.5) * 100 * speedMultiplier,
+            radius: 40 + Math.random() * 20,
+            rotation: 0,
+            rotationSpeed: (Math.random() - 0.5) * 4
+        });
     }
 
     update(deltaTime) {
@@ -112,6 +152,15 @@ export class AsteroidsGame extends BaseGame {
         // Update players
         this.players.forEach(player => {
             if (player.alive) {
+                // Update invulnerability
+                if (player.invulnerable) {
+                    player.invulnerableTime -= deltaTime * 1000;
+                    if (player.invulnerableTime <= 0) {
+                        player.invulnerable = false;
+                        player.respawning = false;
+                    }
+                }
+                
                 // Update position
                 player.x += player.velocityX * deltaTime;
                 player.y += player.velocityY * deltaTime;
@@ -175,20 +224,45 @@ export class AsteroidsGame extends BaseGame {
                     const player = this.players.get(bullet.playerId);
                     if (player) {
                         player.score += 10;
+                        
+                        // Check for win condition (500 points)
+                        if (player.score >= 500 && !this.gameEnded) {
+                            this.endGame(player);
+                            return;
+                        }
                     }
                     
                     // Split asteroid if large enough
                     if (asteroid.radius > 20) {
                         for (let i = 0; i < 2; i++) {
+                            // Calculate outward explosion direction
+                            // Create fragments that move away from asteroid center
+                            const explosionAngle = (Math.PI * 2 / 2) * i + (Math.random() - 0.5) * 0.8; // Base angle with randomness
+                            
+                            // Calculate parent's momentum and add explosion energy
+                            const parentSpeed = Math.sqrt(asteroid.velocityX ** 2 + asteroid.velocityY ** 2);
+                            const explosionSpeed = Math.max(parentSpeed * 2.5, 120); // Much faster fragments, minimum 120
+                            
+                            // Add some randomness to explosion speed (±30%)
+                            const speedVariation = 0.7 + Math.random() * 0.6; // 0.7 to 1.3 multiplier
+                            const finalSpeed = explosionSpeed * speedVariation;
+                            
+                            // Calculate outward velocity components
+                            const outwardVelX = Math.cos(explosionAngle) * finalSpeed;
+                            const outwardVelY = Math.sin(explosionAngle) * finalSpeed;
+                            
+                            // Add portion of parent momentum for realistic physics
+                            const momentumFactor = 0.3; // 30% of parent's momentum carried over
+                            
                             this.asteroids.push({
                                 id: Date.now() + i,
                                 x: asteroid.x,
                                 y: asteroid.y,
-                                velocityX: (Math.random() - 0.5) * 150,
-                                velocityY: (Math.random() - 0.5) * 150,
+                                velocityX: outwardVelX + (asteroid.velocityX * momentumFactor),
+                                velocityY: outwardVelY + (asteroid.velocityY * momentumFactor),
                                 radius: asteroid.radius * 0.6,
                                 rotation: 0,
-                                rotationSpeed: (Math.random() - 0.5) * 6
+                                rotationSpeed: (Math.random() - 0.5) * 8 // Faster rotation for dramatic effect
                             });
                         }
                     }
@@ -206,26 +280,41 @@ export class AsteroidsGame extends BaseGame {
                         Math.pow(player.y - asteroid.y, 2)
                     );
                     
-                    if (distance < asteroid.radius + 10) {
-                        player.alive = false;
+                    if (distance < asteroid.radius + 10 && !player.invulnerable) {
                         player.lives--;
+                        player.respawning = true;
+                        player.invulnerable = true;
+                        player.invulnerableTime = 3000; // 3 seconds of invulnerability
                         
-                        if (player.lives > 0) {
-                            // Respawn after delay
-                            setTimeout(() => {
-                                player.alive = true;
-                                player.x = this.gameWidth / 2;
-                                player.y = this.gameHeight / 2;
-                                player.velocityX = 0;
-                                player.velocityY = 0;
-                                player.rotation = 0;
-                                player.lastShotTime = 0;
-                            }, 3000);
+                        // Immediate respawn at center with invulnerability
+                        player.x = this.gameWidth / 2;
+                        player.y = this.gameHeight / 2;
+                        player.velocityX = 0;
+                        player.velocityY = 0;
+                        player.rotation = 0;
+                        player.lastShotTime = 0;
+                        
+                        if (player.lives <= 0) {
+                            player.alive = false;
                         }
+                        // Player remains alive if they still have lives (respawn with invulnerability)
                     }
                 });
             }
         });
+
+        // Check if all players are dead
+        const alivePlayers = Array.from(this.players.values()).filter(player => player.alive);
+        if (this.players.size > 0 && alivePlayers.length === 0 && !this.gameEnded) {
+            // All players are dead - find winner by highest score
+            const allPlayers = Array.from(this.players.values());
+            const winner = allPlayers.reduce((highest, current) => 
+                current.score > highest.score ? current : highest
+            );
+            
+            this.endGameAllDead(winner);
+            return;
+        }
 
         // Spawn new wave if all asteroids destroyed
         if (this.asteroids.length === 0) {
@@ -234,6 +323,69 @@ export class AsteroidsGame extends BaseGame {
 
         // Broadcast game state to all clients
         this.broadcast('gameState', this.getGameStateForClient());
+    }
+    
+    endGame(winner) {
+        if (this.gameEnded) return; // Prevent multiple end game calls
+        this.gameEnded = true;
+        
+        // Broadcast winner
+        this.broadcast('gameWinner', {
+            winner: winner.name,
+            score: winner.score,
+            message: `🏆 ${winner.name} wins with ${winner.score} points!`
+        });
+        
+        console.log(`Asteroids game ended! Winner: ${winner.name} with ${winner.score} points`);
+        
+        // Reset game after 5 seconds
+        setTimeout(() => {
+            this.resetGame();
+        }, 5000);
+    }
+
+    endGameAllDead(winner) {
+        if (this.gameEnded) return; // Prevent multiple end game calls
+        this.gameEnded = true;
+        
+        // Broadcast winner when all players are dead
+        this.broadcast('gameWinner', {
+            winner: winner.name,
+            score: winner.score,
+            message: `💀 All players eliminated! ${winner.name} wins with highest score: ${winner.score} points!`
+        });
+        
+        console.log(`Asteroids game ended - all dead! Winner: ${winner.name} with highest score: ${winner.score} points`);
+        
+        // Reset game after 5 seconds
+        setTimeout(() => {
+            this.resetGame();
+        }, 5000);
+    }
+
+    resetGame() {
+        // Reset all players
+        this.players.forEach(player => {
+            player.lives = 3;
+            player.score = 0;
+            player.alive = true;
+            player.x = this.gameWidth / 2;
+            player.y = this.gameHeight / 2;
+            player.velocityX = 0;
+            player.velocityY = 0;
+            player.rotation = 0;
+            player.lastShotTime = 0;
+            player.respawning = false;
+            player.invulnerable = false;
+            player.invulnerableTime = 0;
+        });
+        
+        // Reset game state
+        this.bullets = [];
+        this.gameEnded = false; // Reset the ended flag
+        this.spawnAsteroids();
+        
+        console.log('Asteroids game reset complete');
     }
 
     setPlayerInput(socketId, input) {
@@ -282,6 +434,10 @@ export class AsteroidsGame extends BaseGame {
             velocityY: Math.sin(angle) * bulletSpeed + player.velocityY,
             life: 3
         });
+    }
+
+    getPlayerCount() {
+        return this.players.size;
     }
 
     getGameStateForClient() {

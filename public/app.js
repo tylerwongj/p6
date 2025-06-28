@@ -48,8 +48,30 @@ class GameHub {
   }
 
   generateRandomName() {
-    const adjectives = ['Red', 'Blue', 'Fast', 'Quick', 'Cool', 'Super', 'Mega', 'Epic', 'Stinky', 'Cosmic', 'Swift', 'Bold', 'Clever', 'Mighty']
-    const nouns = ['Knight', 'Wizard', 'Ninja', 'Racer', 'Player', 'Gamer', 'Hero', 'Master', 'Explorer', 'Warrior', 'Scout', 'Hunter', 'Ranger', 'Pilot']
+    const adjectives = [
+      'Red', 'Blue', 'Fast', 'Quick', 'Cool', 'Super', 'Mega', 'Epic', 'Stinky', 'Cosmic', 
+      'Swift', 'Bold', 'Clever', 'Mighty', 'Fierce', 'Brave', 'Wild', 'Sharp', 'Bright', 'Dark',
+      'Silent', 'Loud', 'Sneaky', 'Blazing', 'Frozen', 'Golden', 'Silver', 'Iron', 'Steel', 'Stone',
+      'Lightning', 'Thunder', 'Storm', 'Fire', 'Ice', 'Shadow', 'Mystic', 'Ancient', 'Royal', 'Noble',
+      'Phantom', 'Ghost', 'Demon', 'Angel', 'Divine', 'Legendary', 'Mythic', 'Cursed', 'Blessed', 'Magic',
+      'Deadly', 'Toxic', 'Neon', 'Crystal', 'Plasma', 'Quantum', 'Cyber', 'Digital', 'Virtual', 'Atomic',
+      'Nuclear', 'Solar', 'Lunar', 'Stellar', 'Galactic', 'Void', 'Chaos', 'Order', 'Primal', 'Eternal',
+      'Infinite', 'Supreme', 'Ultimate', 'Prime', 'Alpha', 'Omega', 'Delta', 'Gamma', 'Beta', 'Sigma',
+      'Crimson', 'Scarlet', 'Violet', 'Azure', 'Emerald', 'Amber', 'Jade', 'Onyx', 'Pearl', 'Ruby',
+      'Sapphire', 'Diamond', 'Platinum', 'Titanium', 'Obsidian', 'Marble', 'Granite', 'Quartz', 'Opal', 'Topaz'
+    ]
+    const nouns = [
+      'Knight', 'Wizard', 'Ninja', 'Racer', 'Player', 'Gamer', 'Hero', 'Master', 'Explorer', 'Warrior',
+      'Scout', 'Hunter', 'Ranger', 'Pilot', 'Captain', 'Admiral', 'General', 'Commander', 'Guardian', 'Sentinel',
+      'Assassin', 'Rogue', 'Thief', 'Archer', 'Mage', 'Sorcerer', 'Paladin', 'Barbarian', 'Monk', 'Cleric',
+      'Dragon', 'Phoenix', 'Griffin', 'Tiger', 'Wolf', 'Eagle', 'Falcon', 'Bear', 'Lion', 'Shark',
+      'Blade', 'Sword', 'Shield', 'Crown', 'Throne', 'Storm', 'Lightning', 'Thunder', 'Flame', 'Frost',
+      'Viper', 'Cobra', 'Panther', 'Leopard', 'Jaguar', 'Lynx', 'Raven', 'Hawk', 'Owl', 'Spider',
+      'Scorpion', 'Mantis', 'Beetle', 'Wasp', 'Hornet', 'Venom', 'Fang', 'Claw', 'Talon', 'Wing',
+      'Crusher', 'Destroyer', 'Slayer', 'Reaper', 'Vanquisher', 'Conqueror', 'Victor', 'Champion', 'Legend', 'Titan',
+      'Golem', 'Wraith', 'Specter', 'Banshee', 'Vampire', 'Werewolf', 'Demon', 'Seraph', 'Cherub', 'Valkyrie',
+      'Samurai', 'Gladiator', 'Centurion', 'Spartan', 'Viking', 'Berserker', 'Crusader', 'Templar', 'Inquisitor', 'Executor'
+    ]
     
     const adjective = adjectives[Math.floor(Math.random() * adjectives.length)]
     const noun = nouns[Math.floor(Math.random() * nouns.length)]
@@ -93,7 +115,7 @@ class GameHub {
         <div class="game-title">${this.capitalize(game.name)}</div>
         <div class="game-description">${game.description}</div>
         <div class="game-status">
-          <span class="players-count">${game.players}/${game.maxPlayers} players</span>
+          <span class="players-count ${this.getPlayerCountClass(game)}">${game.players}/${game.maxPlayers} players</span>
           <span class="status-badge ${this.getStatusClass(game)}">
             ${this.getStatusText(game)}
           </span>
@@ -102,9 +124,22 @@ class GameHub {
     `).join('')
   }
 
+  getPlayerCountClass(game) {
+    if (game.players === 0) {
+      return 'empty'  // Yellow
+    }
+    if (game.players >= game.maxPlayers) {
+      return 'full'   // Red
+    }
+    return 'partial'  // Green
+  }
+
   getStatusClass(game) {
     if (game.players >= game.maxPlayers) {
       return 'status-full'
+    }
+    if (game.players > 0) {
+      return 'status-playing'
     }
     return 'status-available'
   }

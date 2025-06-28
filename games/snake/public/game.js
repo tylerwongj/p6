@@ -130,7 +130,7 @@ function updateUI() {
         const statusClass = player.alive ? 'alive' : 'dead'
         const name = isMe ? `${player.name} (You)` : player.name
         playersHTML += `<div class="player ${statusClass}" style="border-left: 4px solid ${player.color}">
-            ${name} - Score: ${player.score}
+            ${name} - Wins: ${player.wins || 0}
         </div>`
     })
     playersListEl.innerHTML = playersHTML

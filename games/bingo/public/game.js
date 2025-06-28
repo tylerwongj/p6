@@ -8,11 +8,12 @@ let playerName = null
 let gameState = null
 let myCard = null
 let myMarkedSpots = new Set()
+let allPlayersCards = null
 
 // UI elements
 const playersInfoEl = document.getElementById('playersInfo')
 const gameStatusEl = document.getElementById('gameStatus')
-const cardGridEl = document.getElementById('cardGrid')
+const cardsContainerEl = document.getElementById('cardsContainer')
 const currentCallEl = document.getElementById('currentCall')
 const currentNumberEl = document.getElementById('currentNumber')
 const numbersGridEl = document.getElementById('numbersGrid')
@@ -59,6 +60,7 @@ function setupSocketEvents() {
         console.log('Game state received:', state)
         gameState = state
         myCard = state.myCard
+        allPlayersCards = state.allPlayersCards
         if (state.myMarkedSpots) {
             myMarkedSpots = new Set(state.myMarkedSpots)
         }
@@ -149,36 +151,80 @@ function updatePlayersInfo() {
 }
 
 function updateBingoCard() {
-    if (!myCard) return
+    if (!allPlayersCards) return
     
-    cardGridEl.innerHTML = ''
+    cardsContainerEl.innerHTML = ''
     
     const columns = ['B', 'I', 'N', 'G', 'O']
     
-    for (let row = 0; row < 5; row++) {
-        for (let col = 0; col < 5; col++) {
-            const cell = document.createElement('div')
-            cell.className = 'bingo-cell'
-            
-            const spotId = `${row}-${col}`
-            const columnLetter = columns[col]
-            const value = myCard[columnLetter][row]
-            
-            if (value === 'FREE') {
-                cell.textContent = 'FREE'
-                cell.classList.add('free')
-            } else {
-                cell.textContent = value
-                cell.onclick = () => markSpot(row, col)
-                
-                if (myMarkedSpots.has(spotId)) {
-                    cell.classList.add('marked')
-                }
-            }
-            
-            cardGridEl.appendChild(cell)
+    // Create cards for all players side by side
+    Object.entries(allPlayersCards).forEach(([playerId, playerData]) => {
+        const cardDiv = document.createElement('div')
+        cardDiv.className = 'bingo-card'
+        
+        // Highlight current player's card
+        if (playerId === socket.id) {
+            cardDiv.classList.add('my-card')
         }
-    }
+        
+        // Card title
+        const cardTitle = document.createElement('div')
+        cardTitle.className = 'card-title'
+        const isMyCard = playerId === socket.id
+        const titlePrefix = isMyCard ? '🎯 YOUR CARDS: ' : ''
+        cardTitle.textContent = titlePrefix + playerData.name + (playerData.hasBingo ? ' 🏆' : '')
+        cardDiv.appendChild(cardTitle)
+        
+        // Card header
+        const headerDiv = document.createElement('div')
+        headerDiv.className = 'card-header'
+        columns.forEach(letter => {
+            const headerCell = document.createElement('div')
+            headerCell.className = 'header-cell'
+            headerCell.textContent = letter
+            headerDiv.appendChild(headerCell)
+        })
+        cardDiv.appendChild(headerDiv)
+        
+        // Card grid
+        const gridDiv = document.createElement('div')
+        gridDiv.className = 'card-grid'
+        
+        const card = playerData.card
+        const markedSpots = new Set(playerData.markedSpots)
+        
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 5; col++) {
+                const cell = document.createElement('div')
+                cell.className = 'bingo-cell'
+                
+                const spotId = `${row}-${col}`
+                const columnLetter = columns[col]
+                const value = card[columnLetter][row]
+                
+                if (value === 'FREE') {
+                    cell.textContent = 'FREE'
+                    cell.classList.add('free')
+                } else {
+                    cell.textContent = value
+                    
+                    // Only allow clicking on current player's card
+                    if (playerId === socket.id) {
+                        cell.onclick = () => markSpot(row, col)
+                    }
+                    
+                    if (markedSpots.has(spotId)) {
+                        cell.classList.add('marked')
+                    }
+                }
+                
+                gridDiv.appendChild(cell)
+            }
+        }
+        
+        cardDiv.appendChild(gridDiv)
+        cardsContainerEl.appendChild(cardDiv)
+    })
 }
 
 function markSpot(row, col) {
@@ -230,26 +276,41 @@ function getNumberColumn(number) {
 }
 
 function highlightMatchingNumbers(calledNumber) {
-    if (!myCard) return
+    if (!allPlayersCards) return
     
     const columns = ['B', 'I', 'N', 'G', 'O']
-    const cells = cardGridEl.children
+    const cardElements = cardsContainerEl.children
     
-    for (let row = 0; row < 5; row++) {
-        for (let col = 0; col < 5; col++) {
-            const cellIndex = row * 5 + col
-            const cell = cells[cellIndex]
-            const columnLetter = columns[col]
-            const value = myCard[columnLetter][row]
-            
-            if (value === calledNumber) {
-                cell.style.animation = 'highlight 2s ease-in-out'
-                setTimeout(() => {
-                    cell.style.animation = ''
-                }, 2000)
+    // Check each player's card for matching numbers
+    let cardIndex = 0
+    Object.entries(allPlayersCards).forEach(([playerId, playerData]) => {
+        const cardElement = cardElements[cardIndex]
+        if (!cardElement) return
+        
+        const gridElement = cardElement.querySelector('.card-grid')
+        if (!gridElement) return
+        
+        const cells = gridElement.children
+        const card = playerData.card
+        
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 5; col++) {
+                const cellIndex = row * 5 + col
+                const cell = cells[cellIndex]
+                const columnLetter = columns[col]
+                const value = card[columnLetter][row]
+                
+                if (value === calledNumber) {
+                    cell.style.animation = 'highlight 0.3s ease-in-out'
+                    setTimeout(() => {
+                        cell.style.animation = ''
+                    }, 300)
+                }
             }
         }
-    }
+        
+        cardIndex++
+    })
 }
 
 function updateGameStatus() {

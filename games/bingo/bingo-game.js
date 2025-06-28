@@ -3,6 +3,9 @@ import { BaseGame } from '@tyler-arcade/multiplayer'
 class BingoGame extends BaseGame {
   constructor() {
     super()
+    this.name = 'Bingo'
+    this.description = 'Classic bingo game - mark your card and call BINGO!'
+    this.maxPlayers = 6
     this.spectators = []
     this.gameState = {
       players: {},
@@ -51,6 +54,7 @@ class BingoGame extends BaseGame {
     
     return card
   }
+
 
   getRandomNumbers(min, max, count) {
     const numbers = []
@@ -190,11 +194,7 @@ class BingoGame extends BaseGame {
       player.markedSpots.add(spotId)
     }
     
-    this.sendToPlayer(playerId, 'gameState', {
-      ...this.gameState,
-      myCard: player.card,
-      myMarkedSpots: Array.from(player.markedSpots)
-    })
+    this.broadcastGameState()
   }
 
   checkBingo(playerId) {
@@ -202,10 +202,20 @@ class BingoGame extends BaseGame {
     if (!player || player.hasBingo) return
     
     const card = player.card
-    const marked = player.markedSpots
+    const markedSpots = player.markedSpots
     
-    // Check all possible bingo patterns
-    const hasBingo = this.checkBingoPatterns(card, marked)
+    // First check if player has any incorrect marks on their card
+    const hasInvalidMarks = this.hasInvalidMarks(card, markedSpots)
+    
+    if (hasInvalidMarks) {
+      this.sendToPlayer(playerId, 'invalidBingo', {
+        message: 'BINGO won\'t count! Only mark numbers that have been called.'
+      })
+      return
+    }
+    
+    // Check if player has valid bingo (any line)
+    const hasBingo = this.checkBingoPatterns(card, markedSpots)
     
     if (hasBingo) {
       player.hasBingo = true
@@ -229,6 +239,29 @@ class BingoGame extends BaseGame {
     }
   }
 
+  hasInvalidMarks(card, markedSpots) {
+    const columns = ['B', 'I', 'N', 'G', 'O']
+    
+    // Check every marked spot on the card
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 5; col++) {
+        const spotId = `${row}-${col}`
+        const columnLetter = columns[col]
+        const value = card[columnLetter][row]
+        
+        // Skip FREE spaces
+        if (value === 'FREE') continue
+        
+        // If spot is marked but number was not called, card is invalid
+        if (markedSpots.has(spotId) && !this.gameState.calledNumbers.includes(value)) {
+          return true
+        }
+      }
+    }
+    
+    return false
+  }
+
   checkBingoPatterns(card, markedSpots) {
     const columns = ['B', 'I', 'N', 'G', 'O']
     
@@ -237,8 +270,14 @@ class BingoGame extends BaseGame {
       let rowComplete = true
       for (let col = 0; col < 5; col++) {
         const spotId = `${row}-${col}`
-        if (row === 2 && col === 2) continue // FREE space
-        if (!markedSpots.has(spotId)) {
+        const columnLetter = columns[col]
+        const value = card[columnLetter][row]
+        
+        // FREE space is automatically valid
+        if (value === 'FREE') continue
+        
+        // Check if spot is marked AND the number was actually called
+        if (!markedSpots.has(spotId) || !this.gameState.calledNumbers.includes(value)) {
           rowComplete = false
           break
         }
@@ -251,8 +290,14 @@ class BingoGame extends BaseGame {
       let colComplete = true
       for (let row = 0; row < 5; row++) {
         const spotId = `${row}-${col}`
-        if (row === 2 && col === 2) continue // FREE space
-        if (!markedSpots.has(spotId)) {
+        const columnLetter = columns[col]
+        const value = card[columnLetter][row]
+        
+        // FREE space is automatically valid
+        if (value === 'FREE') continue
+        
+        // Check if spot is marked AND the number was actually called
+        if (!markedSpots.has(spotId) || !this.gameState.calledNumbers.includes(value)) {
           colComplete = false
           break
         }
@@ -260,33 +305,45 @@ class BingoGame extends BaseGame {
       if (colComplete) return true
     }
     
-    // Check diagonals
-    // Top-left to bottom-right
-    let diagonal1 = true
+    // Check diagonal (top-left to bottom-right)
+    let diagonal1Complete = true
     for (let i = 0; i < 5; i++) {
       const spotId = `${i}-${i}`
-      if (i === 2) continue // FREE space
-      if (!markedSpots.has(spotId)) {
-        diagonal1 = false
+      const columnLetter = columns[i]
+      const value = card[columnLetter][i]
+      
+      // FREE space is automatically valid
+      if (value === 'FREE') continue
+      
+      // Check if spot is marked AND the number was actually called
+      if (!markedSpots.has(spotId) || !this.gameState.calledNumbers.includes(value)) {
+        diagonal1Complete = false
         break
       }
     }
-    if (diagonal1) return true
+    if (diagonal1Complete) return true
     
-    // Top-right to bottom-left
-    let diagonal2 = true
+    // Check diagonal (top-right to bottom-left)
+    let diagonal2Complete = true
     for (let i = 0; i < 5; i++) {
       const spotId = `${i}-${4-i}`
-      if (i === 2) continue // FREE space
-      if (!markedSpots.has(spotId)) {
-        diagonal2 = false
+      const columnLetter = columns[4-i]
+      const value = card[columnLetter][i]
+      
+      // FREE space is automatically valid
+      if (value === 'FREE') continue
+      
+      // Check if spot is marked AND the number was actually called
+      if (!markedSpots.has(spotId) || !this.gameState.calledNumbers.includes(value)) {
+        diagonal2Complete = false
         break
       }
     }
-    if (diagonal2) return true
+    if (diagonal2Complete) return true
     
     return false
   }
+
 
   endGame(reason = '') {
     if (this.callInterval) {
@@ -329,13 +386,25 @@ class BingoGame extends BaseGame {
   }
 
   broadcastGameState() {
-    // Send game state to each player with their personal card info
+    // Send game state to each player with their personal card info and all players' cards for side-by-side viewing
     Object.keys(this.gameState.players).forEach(playerId => {
       const player = this.gameState.players[playerId]
       const personalState = {
         ...this.gameState,
         myCard: player.card,
         myMarkedSpots: Array.from(player.markedSpots),
+        allPlayersCards: Object.fromEntries(
+          Object.entries(this.gameState.players).map(([id, p]) => [
+            id,
+            {
+              id: p.id,
+              name: p.name,
+              card: p.card,
+              markedSpots: Array.from(p.markedSpots),
+              hasBingo: p.hasBingo
+            }
+          ])
+        ),
         players: Object.fromEntries(
           Object.entries(this.gameState.players).map(([id, p]) => [
             id,

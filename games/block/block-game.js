@@ -45,8 +45,8 @@ export class BlockGame extends BaseGame {
       })
     }
     
-    // Create collectibles
-    for (let i = 0; i < 5; i++) {
+    // Create collectibles (8 yellow balls)
+    for (let i = 0; i < 8; i++) {
       this.spawnCollectible()
     }
   }
@@ -67,12 +67,15 @@ export class BlockGame extends BaseGame {
     }
     
     if (this.players.length < this.maxPlayers) {
+      // Find a safe spawn position for the player (away from blocks and other players)
+      const spawnPos = this.findSafeSpawnPosition()
+      
       const player = {
         id: socketId,
         socketId: socketId,
         name: playerName,
-        x: Math.random() * (this.gameWidth - 40) + 20,
-        y: Math.random() * (this.gameHeight - 40) + 20,
+        x: spawnPos.x,
+        y: spawnPos.y,
         width: 30,
         height: 30,
         color: `hsl(${this.players.length * 90}, 80%, 60%)`,
@@ -98,12 +101,22 @@ export class BlockGame extends BaseGame {
       
       return {
         success: true,
-        playerData: { playerId: socketId, playerName: player.name }
+        playerData: { playerId: socketId, playerName: player.name, isPlayer: true }
       }
     } else {
+      // Game is full, add as spectator
+      const spectator = {
+        id: socketId,
+        name: playerName,
+        isSpectator: true
+      }
+      
+      this.spectators.push(spectator)
+      console.log(`${playerName} joined Block as spectator`)
+      
       return {
-        success: false,
-        reason: 'Block game is full'
+        success: true,
+        playerData: { playerId: socketId, playerName: spectator.name, isSpectator: true }
       }
     }
   }
@@ -112,6 +125,7 @@ export class BlockGame extends BaseGame {
    * Handle a player leaving Block
    */
   handlePlayerLeave(socketId, player, socket) {
+    // Check if leaving player is an active player
     const playerIndex = this.players.findIndex(p => p.id === socketId)
     if (playerIndex !== -1) {
       const leavingPlayer = this.players[playerIndex]
@@ -128,6 +142,14 @@ export class BlockGame extends BaseGame {
         this.gameStarted = false
         this.broadcast('gameEnded', { reason: 'Not enough players' })
       }
+    } else {
+      // Check if leaving player is a spectator
+      const spectatorIndex = this.spectators.findIndex(s => s.id === socketId)
+      if (spectatorIndex !== -1) {
+        const leavingSpectator = this.spectators[spectatorIndex]
+        this.spectators.splice(spectatorIndex, 1)
+        console.log(`${leavingSpectator.name} (spectator) left Block`)
+      }
     }
   }
 
@@ -135,6 +157,7 @@ export class BlockGame extends BaseGame {
    * Handle player input for Block
    */
   handlePlayerInput(socketId, input, socket) {
+    // Only active players can provide input, not spectators
     const player = this.players.find(p => p.id === socketId)
     if (player && this.gameStarted) {
       this.setPlayerInput(player, input)
@@ -207,7 +230,13 @@ export class BlockGame extends BaseGame {
           // Spawn new collectible
           this.spawnCollectible()
           
-          console.log(`${player.name} collected item for ${collectible.points} points!`)
+          console.log(`${player.name} collected item for ${collectible.points} points! Total: ${player.score}`)
+          
+          // Check for winner (100 points)
+          if (player.score >= 100) {
+            this.endGame(player)
+            return
+          }
         }
       })
     })
@@ -302,9 +331,119 @@ export class BlockGame extends BaseGame {
   }
 
   /**
-   * Spawn a collectible
+   * Find a safe spawn position for players (away from blocks and other players)
+   */
+  findSafeSpawnPosition() {
+    let attempts = 0
+    const maxAttempts = 100 // More attempts for player spawning
+    
+    while (attempts < maxAttempts) {
+      const x = Math.random() * (this.gameWidth - 60) + 30 // Account for player size
+      const y = Math.random() * (this.gameHeight - 60) + 30
+      
+      // Check if this position overlaps with any block
+      const overlapsBlock = this.blocks.some(block => {
+        const playerSize = 30 // Player is 30x30
+        const blockSize = Math.max(block.width, block.height)
+        const minDistance = Math.max(50, blockSize) // Minimum 50px distance
+        
+        const playerLeft = x - minDistance
+        const playerRight = x + minDistance
+        const playerTop = y - minDistance
+        const playerBottom = y + minDistance
+        
+        const blockLeft = block.x
+        const blockRight = block.x + block.width
+        const blockTop = block.y
+        const blockBottom = block.y + block.height
+        
+        return playerLeft < blockRight && 
+               playerRight > blockLeft && 
+               playerTop < blockBottom && 
+               playerBottom > blockTop
+      })
+      
+      // Check if this position overlaps with any existing player
+      const overlapsPlayer = this.players.some(existingPlayer => {
+        const distance = Math.sqrt((x - existingPlayer.x) ** 2 + (y - existingPlayer.y) ** 2)
+        return distance < 60 // 60px minimum distance between players
+      })
+      
+      if (!overlapsBlock && !overlapsPlayer) {
+        return { x, y }
+      }
+      
+      attempts++
+    }
+    
+    // Fallback to center if we can't find a good spot
+    return { 
+      x: this.gameWidth / 2, 
+      y: this.gameHeight / 2 
+    }
+  }
+
+  /**
+   * Spawn a collectible OUTSIDE collision blocks and away from players
    */
   spawnCollectible() {
+    let attempts = 0
+    const maxAttempts = 50
+    
+    while (attempts < maxAttempts) {
+      const x = Math.random() * (this.gameWidth - 40) + 20
+      const y = Math.random() * (this.gameHeight - 40) + 20
+      
+      // Check if this position overlaps with any block (using larger object size)
+      const overlapsBlock = this.blocks.some(block => {
+        const collectibleRadius = 10
+        const blockSize = Math.max(block.width, block.height) // Use larger dimension
+        const minDistance = Math.max(50, blockSize) // Minimum 50px as requested
+        
+        const collectibleLeft = x - minDistance
+        const collectibleRight = x + minDistance
+        const collectibleTop = y - minDistance
+        const collectibleBottom = y + minDistance
+        
+        const blockLeft = block.x
+        const blockRight = block.x + block.width
+        const blockTop = block.y
+        const blockBottom = block.y + block.height
+        
+        // Check if collectible (with proper spacing) overlaps with block rectangle
+        return collectibleLeft < blockRight && 
+               collectibleRight > blockLeft && 
+               collectibleTop < blockBottom && 
+               collectibleBottom > blockTop
+      })
+      
+      // Check if this position overlaps with any player (using larger object size)
+      const overlapsPlayer = this.players.some(player => {
+        const collectibleRadius = 10
+        const playerSize = Math.max(player.width, player.height) // Use larger dimension
+        const minDistance = Math.max(50, playerSize) // Minimum 50px to match block spacing
+        
+        const distance = Math.sqrt((x - player.x) ** 2 + (y - player.y) ** 2)
+        return distance < minDistance
+      })
+      
+      if (!overlapsBlock && !overlapsPlayer) {
+        // Found a good spot outside blocks and away from players
+        this.collectibles.push({
+          id: Date.now() + Math.random(),
+          x: x,
+          y: y,
+          radius: 10,
+          color: '#FFD700',
+          points: 10
+        })
+        return
+      }
+      
+      attempts++
+    }
+    
+    // Fallback if we can't find a spot (shouldn't happen with reasonable block density)
     this.collectibles.push({
       id: Date.now() + Math.random(),
       x: Math.random() * (this.gameWidth - 40) + 20,
@@ -316,25 +455,86 @@ export class BlockGame extends BaseGame {
   }
 
   /**
-   * Reset game
+   * End game when someone reaches 100 points
+   */
+  endGame(winner) {
+    this.gameStarted = false
+    
+    // Broadcast game ended with winner
+    this.broadcast('gameEnded', {
+      winner: winner.name,
+      score: winner.score,
+      message: `🏆 ${winner.name} wins with ${winner.score} points!`,
+      countdown: 5
+    })
+    
+    console.log(`Block Game ended! Winner: ${winner.name} with ${winner.score} points`)
+    
+    // Countdown timer for restart
+    let countdown = 4
+    const countdownInterval = setInterval(() => {
+      this.broadcast('gameRestarting', {
+        winner: winner.name,
+        score: winner.score,
+        message: `🏆 ${winner.name} wins with ${winner.score} points!`,
+        countdown: countdown
+      })
+      
+      countdown--
+      
+      if (countdown < 0) {
+        clearInterval(countdownInterval)
+      }
+    }, 1000)
+    
+    // Reset game after 5 seconds
+    setTimeout(() => {
+      this.resetGame()
+    }, 5000)
+  }
+
+  /**
+   * Reset game completely
    */
   resetGame() {
+    // Reset all player states and respawn safely
     this.players.forEach(player => {
-      player.x = Math.random() * (this.gameWidth - 40) + 20
-      player.y = Math.random() * (this.gameHeight - 40) + 20
+      const safePos = this.findSafeSpawnPosition()
+      player.x = safePos.x
+      player.y = safePos.y
       player.velocityX = 0
       player.velocityY = 0
       player.score = 0
     })
     
+    // Reset score manager
     this.scoreManager.reset()
-    this.collectibles = []
     
-    for (let i = 0; i < 5; i++) {
+    // Clear and regenerate blocks
+    this.blocks = []
+    for (let i = 0; i < 20; i++) {
+      this.blocks.push({
+        id: i,
+        x: Math.random() * (this.gameWidth - 50),
+        y: Math.random() * (this.gameHeight - 50),
+        width: 50,
+        height: 50,
+        color: `hsl(${Math.random() * 360}, 70%, 50%)`
+      })
+    }
+    
+    // Clear and respawn collectibles (8 like original)
+    this.collectibles = []
+    for (let i = 0; i < 8; i++) {
       this.spawnCollectible()
     }
     
-    this.broadcast('gameReset', { message: 'Game has been reset!' })
+    // Restart game if we have enough players
+    if (this.players.length >= 2) {
+      this.gameStarted = true
+    }
+    
+    this.broadcast('gameReset', { message: 'Game completely reset! New blocks and positions!' })
   }
 
   /**
@@ -343,6 +543,7 @@ export class BlockGame extends BaseGame {
   getGameStateForClient() {
     const state = {
       players: this.players,
+      spectators: this.spectators,
       blocks: this.blocks,
       collectibles: this.collectibles,
       gameStarted: this.gameStarted,

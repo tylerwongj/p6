@@ -66,7 +66,8 @@ export class SnakeGame extends BaseGame {
         color: colors[playerId - 1],
         snake: this.gameState.createSnake(playerId),
         alive: true,
-        score: 0
+        score: 0, // Points in current round (for length display)
+        wins: 0   // Number of rounds won
       }
       
       this.gameState.players.push(player)
@@ -383,16 +384,24 @@ class SnakeGameState {
       })
     })
     
-    // Check if game should end and auto-restart
+    // Check if round should end and award win
     const alivePlayers = this.players.filter(p => p.alive)
     if (alivePlayers.length <= 1 && this.players.length > 1 && this.gameStatus !== 'ended') {
       this.gameStatus = 'ended'
-      console.log('Snake game ended!')
       
-      // Auto-restart after 3 seconds
+      // Award win to last survivor (or to no one if all died simultaneously)
+      if (alivePlayers.length === 1) {
+        const winner = alivePlayers[0]
+        winner.wins += 1
+        console.log(`🏆 ${winner.name} wins the round! Total wins: ${winner.wins}`)
+      } else {
+        console.log('💀 No winner - all players died!')
+      }
+      
+      // Start new round after 3 seconds
       setTimeout(() => {
         if (this.players.length > 0) {
-          this.resetGame()
+          this.startNewRound()
         }
       }, 3000)
     }
@@ -435,12 +444,12 @@ class SnakeGameState {
     }
   }
 
-  resetGame() {
-    console.log('Resetting Snake game...')
+  startNewRound() {
+    console.log('🔄 Starting new Snake round...')
     
     this.players.forEach((player, index) => {
       player.alive = true
-      player.score = 0
+      player.score = 0 // Reset round score but keep wins
       player.snake = this.createSnake(player.playerId)
       // Clear any queued directions
       player.snake.directionQueue = []
@@ -449,6 +458,25 @@ class SnakeGameState {
     this.food = this.generateFood()
     this.gameStatus = 'playing'
     
-    console.log('Snake game reset complete!')
+    console.log('✅ New Snake round started!')
+  }
+  
+  resetGame() {
+    console.log('🔄 Resetting Snake game completely...')
+    
+    this.players.forEach((player, index) => {
+      player.alive = true
+      player.score = 0
+      player.wins = 0 // Reset wins on full reset
+      player.snake = this.createSnake(player.playerId)
+      // Clear any queued directions
+      player.snake.directionQueue = []
+    })
+    
+    this.food = this.generateFood()
+    this.gameStatus = 'playing'
+    
+    
+    console.log('✅ Snake game reset complete!')
   }
 }
