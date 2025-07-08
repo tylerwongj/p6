@@ -1,0 +1,18 @@
+{
+  "name": "asteroid-mining-game",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Multiplayer space resource collection game using Tyler Arcade packages",
+  "main": "asteroid-mining-game.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "@tyler-arcade/core": "file:../../packages/core",
+    "@tyler-arcade/2d-input": "file:../../packages/2d-input",
+    "@tyler-arcade/2d-physics": "file:../../packages/2d-physics",
+    "@tyler-arcade/multiplayer": "file:../../packages/multiplayer",
+    "express": "^4.18.0"
+  }
+}

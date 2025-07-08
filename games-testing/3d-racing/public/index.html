@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Racing - Tyler Arcade</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a1a, #0a0a2a);
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            text-align: center;
+            background: rgba(42, 42, 42, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 95vw;
+            max-height: 95vh;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-info {
+            margin-bottom: 15px;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .race-stats {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: #3a3a3a;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            border-left: 4px solid #ff6b35;
+        }
+
+        .game-canvas {
+            border: 3px solid #666;
+            border-radius: 10px;
+            background: linear-gradient(180deg, #87CEEB 0%, #228B22 70%, #8B4513 100%);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .instructions {
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255, 107, 53, 0.1);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            border-left: 4px solid #ff6b35;
+        }
+
+        .controls {
+            margin: 15px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .control-group {
+            background: #3a3a3a;
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #ff6b35;
+        }
+
+        .control-group h4 {
+            margin-bottom: 5px;
+            color: #ff6b35;
+        }
+
+        .control-key {
+            background: #2a2a2a;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            border: 1px solid #555;
+            margin: 2px;
+            display: inline-block;
+        }
+
+        .leaderboard {
+            margin: 15px 0;
+            background: rgba(255, 107, 53, 0.05);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 107, 53, 0.2);
+        }
+
+        .player-position {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .winner-announcement {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: #000;
+        }
+
+        button {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: transform 0.2s ease;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            background: #333;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            border: 1px solid #555;
+            font-family: inherit;
+            font-size: 14px;
+            z-index: 1000;
+            transition: background 0.2s ease;
+        }
+
+        .back-button:hover {
+            background: #555;
+            color: #fff;
+        }
+
+        .back-button:visited {
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .game-canvas {
+                width: 100%;
+                height: auto;
+            }
+            
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .game-info {
+                font-size: 0.9rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🏎️ 3D Racing</h1>
+        
+        <div class="game-info">
+            <div class="game-status" id="gameStatus">Waiting for players...</div>
+            <div class="race-stats" id="raceStats"></div>
+        </div>
+
+        <div class="instructions">
+            🏁 Race around the 3D track! First to complete 3 laps wins!
+        </div>
+
+        <canvas id="gameCanvas" class="game-canvas" width="800" height="600"></canvas>
+
+        <div class="controls">
+            <div class="control-group">
+                <h4>Racing</h4>
+                <span class="control-key">W</span> Accelerate<br>
+                <span class="control-key">S</span> Brake<br>
+                <span class="control-key">A</span> Steer Left<br>
+                <span class="control-key">D</span> Steer Right
+            </div>
+            <div class="control-group">
+                <h4>Camera (JKLI)</h4>
+                <span class="control-key">J</span> Rotate Left<br>
+                <span class="control-key">L</span> Rotate Right<br>
+                <span class="control-key">I</span> Move Up<br>
+                <span class="control-key">K</span> Move Down
+            </div>
+        </div>
+
+        <div class="leaderboard" id="leaderboard" style="display: none;">
+            <h3>🏁 Race Standings</h3>
+            <div id="playerPositions"></div>
+        </div>
+
+        <div id="winnerAnnouncement" class="winner-announcement" style="display: none;"></div>
+
+        <div>
+            <button id="resetButton" onclick="resetGame()" disabled>New Race</button>
+        </div>
+    </div>
+
+    <a href="/" class="back-button">← Back to Hub</a>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="game.js"></script>
+</body>
+</html>

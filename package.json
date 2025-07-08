@@ -6,7 +6,8 @@
   "description": "Tyler's arcade game hub with modular packages",
   "workspaces": [
     "packages/*",
-    "games/*"
+    "games/*",
+    "games-testing/*"
   ],
   "scripts": {
     "start": "node server.js",

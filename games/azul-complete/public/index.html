@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azul - Tyler Arcade</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-header {
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 2px solid #4a5568;
+        }
+
+        .game-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e2e8f0;
+        }
+
+        .game-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .round-info {
+            color: #a0aec0;
+        }
+
+        .current-player {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .game-area {
+            flex: 1;
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        .left-panel {
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .factories-section {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #4a5568;
+            border-radius: 10px;
+            padding: 15px;
+            flex: 1;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #e2e8f0;
+        }
+
+        .factories-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .factory {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #4a5568;
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 80px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .factory:hover {
+            border-color: #4299e1;
+            background: rgba(66, 153, 225, 0.2);
+        }
+
+        .factory.empty {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .center-area {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #4a5568;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 100px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .center-area:hover {
+            border-color: #4299e1;
+            background: rgba(66, 153, 225, 0.2);
+        }
+
+        .tile {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tile:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .tile.blue { background: #3b82f6; }
+        .tile.yellow { background: #fbbf24; }
+        .tile.red { background: #ef4444; }
+        .tile.black { background: #374151; }
+        .tile.white { background: #f8fafc; }
+        .tile.first { background: #ffd700; border-color: #000; }
+
+        .player-board {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .my-board {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #4a5568;
+            border-radius: 10px;
+            padding: 15px;
+            flex: 1;
+        }
+
+        .my-board.active {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .board-content {
+            display: flex;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .pattern-lines {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .pattern-line {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px;
+            border: 1px solid #4a5568;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pattern-line:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .pattern-line.can-place {
+            border-color: #48bb78;
+            background: rgba(72, 187, 120, 0.2);
+        }
+
+        .line-slots {
+            display: flex;
+            gap: 2px;
+        }
+
+        .line-slot {
+            width: 16px;
+            height: 16px;
+            border: 1px solid #718096;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .line-slot.filled {
+            border-color: #333;
+        }
+
+        .wall-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 2px;
+            width: 120px;
+            height: 120px;
+        }
+
+        .wall-cell {
+            border: 1px solid #4a5568;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .wall-cell.filled {
+            border-color: #333;
+        }
+
+        .floor-line {
+            display: flex;
+            gap: 5px;
+            padding: 10px;
+            background: rgba(229, 62, 62, 0.2);
+            border: 1px solid #e53e3e;
+            border-radius: 5px;
+            margin-top: 10px;
+            min-height: 25px;
+        }
+
+        .score-display {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #48bb78;
+            margin-bottom: 10px;
+        }
+
+        .other-players {
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .other-player-board {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #4a5568;
+            border-radius: 10px;
+            padding: 10px;
+            flex: 1;
+        }
+
+        .other-player-board.active {
+            border-color: #ffd700;
+        }
+
+        .player-name {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #e2e8f0;
+        }
+
+        .mini-wall {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 1px;
+            width: 50px;
+            height: 50px;
+            margin-bottom: 5px;
+        }
+
+        .mini-wall-cell {
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .mini-wall-cell.filled {
+            border: 1px solid #333;
+        }
+
+        .mini-score {
+            font-size: 14px;
+            color: #48bb78;
+            font-weight: bold;
+        }
+
+        .waiting-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            gap: 20px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s;
+            background: #4299e1;
+            color: white;
+        }
+
+        .btn:hover {
+            background: #3182ce;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #718096;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.success {
+            background: #48bb78;
+        }
+
+        .btn.success:hover {
+            background: #38a169;
+        }
+
+        .game-over-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            gap: 30px;
+        }
+
+        .winner-announcement {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffd700;
+            text-align: center;
+        }
+
+        .final-scores {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .final-score-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid #4a5568;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .final-score-card.winner {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(66, 153, 225, 0.2);
+            color: #4299e1;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            border: 2px solid #4299e1;
+            transition: all 0.3s;
+        }
+        
+        .back-button:hover {
+            background: rgba(66, 153, 225, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .tile-selection {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #4a5568;
+            border-radius: 15px;
+            padding: 20px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .tile-colors {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid #333;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-button">← Back to Hub</a>
+    
+    <div class="game-container">
+        <div class="game-header">
+            <div class="game-title">Azul</div>
+            <div class="game-info">
+                <div class="round-info" id="roundInfo">Round 1</div>
+                <div class="current-player" id="currentPlayerInfo">Waiting...</div>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <!-- Waiting Screen -->
+            <div class="waiting-screen" id="waitingScreen">
+                <h2>Azul - Strategic Tile Placement</h2>
+                <p>Waiting for 2-4 players...</p>
+                <div class="controls">
+                    <button class="btn success" id="startBtn" onclick="startGame()" style="display: none;">
+                        Start Game
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div class="game-over-screen" id="gameOverScreen" style="display: none;">
+                <div class="winner-announcement" id="winnerAnnouncement"></div>
+                <div class="final-scores" id="finalScores"></div>
+                <div class="controls">
+                    <button class="btn success" onclick="location.reload()">Play Again</button>
+                </div>
+            </div>
+
+            <!-- Playing Screen -->
+            <div class="left-panel" id="leftPanel" style="display: none;">
+                <div class="factories-section">
+                    <div class="section-title">Factories</div>
+                    <div class="factories-grid" id="factoriesGrid"></div>
+                    
+                    <div class="section-title">Center of Table</div>
+                    <div class="center-area" id="centerArea"></div>
+                </div>
+            </div>
+
+            <div class="player-board" id="playerBoard" style="display: none;">
+                <div class="my-board" id="myBoard">
+                    <div class="section-title">Your Board</div>
+                    <div class="score-display" id="myScore">Score: 0</div>
+                    <div class="board-content">
+                        <div class="pattern-lines" id="patternLines"></div>
+                        <div class="wall-grid" id="wallGrid"></div>
+                    </div>
+                    <div class="floor-line" id="floorLine"></div>
+                </div>
+            </div>
+
+            <div class="other-players" id="otherPlayers" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="tile-selection" id="tileSelection">
+        <div class="section-title">Select Color</div>
+        <div class="tile-colors" id="tileColors"></div>
+        <div class="controls">
+            <button class="btn" onclick="closeTileSelection()">Cancel</button>
+        </div>
+    </div>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="game.js"></script>
+</body>
+</html>

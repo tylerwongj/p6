@@ -1,0 +1,18 @@
+{
+  "name": "azul-complete-game",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Multiplayer Azul tile-placement game using Tyler Arcade packages",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "@tyler-arcade/core": "file:../../packages/core",
+    "@tyler-arcade/2d-input": "file:../../packages/2d-input",
+    "@tyler-arcade/multiplayer": "file:../../packages/multiplayer",
+    "@tyler-arcade/ui-components": "file:../../packages/ui-components",
+    "express": "^4.18.0"
+  }
+}

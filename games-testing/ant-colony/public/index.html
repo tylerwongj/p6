@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐜 Ant Colony - Tyler Arcade</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #2c3e1e, #1a2511);
+            color: #e8f5e8;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .game-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .game-area {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at center, #2c3e1e, #1a2511);
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            border: 2px solid #4a6741;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(42, 58, 30, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #4a6741;
+            min-width: 200px;
+        }
+
+        .score-display {
+            margin-bottom: 10px;
+        }
+
+        .score-display h3 {
+            color: #8bc34a;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .player-score {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+            padding: 2px 5px;
+            background: rgba(139, 195, 74, 0.2);
+            border-radius: 3px;
+        }
+
+        .player-score.my-score {
+            background: rgba(139, 195, 74, 0.4);
+            border: 1px solid #8bc34a;
+        }
+
+        .side-panel {
+            width: 300px;
+            background: rgba(26, 37, 17, 0.95);
+            padding: 20px;
+            border-left: 2px solid #4a6741;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+            background: rgba(42, 58, 30, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #4a6741;
+        }
+
+        .panel-section h3 {
+            color: #8bc34a;
+            margin-bottom: 10px;
+            text-align: center;
+            border-bottom: 1px solid #4a6741;
+            padding-bottom: 5px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .stat-item {
+            background: rgba(139, 195, 74, 0.1);
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            color: #8bc34a;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .controls-info {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .controls-info p {
+            margin: 5px 0;
+            padding: 3px 5px;
+            background: rgba(139, 195, 74, 0.1);
+            border-radius: 3px;
+        }
+
+        .game-info {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .game-status {
+            font-size: 18px;
+            color: #8bc34a;
+            margin-bottom: 5px;
+        }
+
+        .player-count {
+            font-size: 14px;
+            color: #a5d6a7;
+        }
+
+        .click-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(139, 195, 74, 0.9);
+            color: #1a2511;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        .ant-trail {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #8bc34a;
+            pointer-events: none;
+            animation: antMove 2s linear forwards;
+        }
+
+        @keyframes antMove {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0.3; transform: scale(0.5); }
+        }
+
+        .winner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .winner-content {
+            text-align: center;
+            background: rgba(139, 195, 74, 0.9);
+            color: #1a2511;
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid #8bc34a;
+        }
+
+        .winner-content h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+
+        .winner-content p {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        .message-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(139, 195, 74, 0.95);
+            color: #1a2511;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 500;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-area">
+            <canvas id="gameCanvas"></canvas>
+            
+            <div class="ui-overlay">
+                <div class="game-info">
+                    <div class="game-status" id="gameStatus">Waiting for Colony Leaders...</div>
+                    <div class="player-count" id="playerCount">0/4 Players</div>
+                </div>
+                
+                <div class="score-display" id="scoreDisplay">
+                    <h3>🏆 Colony Scores</h3>
+                    <div id="playerScores">
+                        <!-- Player scores will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="click-hint" id="clickHint">
+                🐜 Click anywhere to send ant trails! 🐜
+            </div>
+
+            <div class="start-button-container" id="startButtonContainer" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200;">
+                <button onclick="startGame()" style="
+                    background: linear-gradient(135deg, #8bc34a, #689f38);
+                    color: #1a2511;
+                    border: none;
+                    padding: 15px 30px;
+                    font-size: 18px;
+                    font-weight: bold;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    font-family: 'Courier New', monospace;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    🐜 Start Colony Expansion! 🐜
+                </button>
+            </div>
+
+            <div class="winner-overlay" id="winnerOverlay">
+                <div class="winner-content">
+                    <h2 id="winnerTitle">🏆 Colony Victory! 🏆</h2>
+                    <p id="winnerMessage"></p>
+                    <p>New expansion begins in 5 seconds...</p>
+                </div>
+            </div>
+
+            <div class="message-overlay" id="messageOverlay"></div>
+        </div>
+
+        <div class="side-panel">
+            <div class="panel-section">
+                <h3>🐜 Your Colony</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div>Score</div>
+                        <div class="stat-value" id="myScore">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div>Ants</div>
+                        <div class="stat-value" id="myAnts">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div>Food</div>
+                        <div class="stat-value" id="myFood">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div>Stored</div>
+                        <div class="stat-value" id="myStored">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>📊 Game Stats</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div>Ants Total</div>
+                        <div class="stat-value" id="totalAnts">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div>Food Sources</div>
+                        <div class="stat-value" id="totalFood">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div>Trail Points</div>
+                        <div class="stat-value" id="totalTrails">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div>Win Target</div>
+                        <div class="stat-value">200</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>🎮 Controls</h3>
+                <div class="controls-info">
+                    <p><strong>Click Screen:</strong> Send ant trail to location</p>
+                    <p><strong>Multiple Clicks:</strong> Command existing ants</p>
+                    <p><strong>Strategy:</strong> Find food, return to colony</p>
+                    <p><strong>Goal:</strong> First to 200 points wins!</p>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>🌟 Ant Types</h3>
+                <div class="controls-info">
+                    <p><strong>🐜 Worker:</strong> Collect food efficiently</p>
+                    <p><strong>🔍 Scout:</strong> Faster movement, find food</p>
+                    <p><strong>📍 Trail:</strong> Leave pheromone paths</p>
+                    <p><strong>🏠 Colony:</strong> Safe storage for food</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="game.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Asteroid Mining - Tyler Arcade</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c0c, #1a1a2e, #16213e);
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .game-canvas-container {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #0c0c0c 100%);
+        }
+        
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: transparent;
+        }
+        
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 200px;
+        }
+        
+        .timer-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(231, 76, 60, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .controls-help {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+        
+        .side-panel {
+            width: 300px;
+            background: rgba(26, 26, 46, 0.9);
+            padding: 20px;
+            overflow-y: auto;
+            border-left: 2px solid #16213e;
+        }
+        
+        .player-stats {
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .inventory {
+            background: rgba(46, 204, 113, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2ecc71;
+        }
+        
+        .equipment {
+            background: rgba(243, 156, 18, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #f39c12;
+        }
+        
+        .leaderboard {
+            background: rgba(155, 89, 182, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #9b59b6;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        
+        .resource-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+        }
+        
+        .health-bar, .energy-bar, .shield-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+            transition: width 0.3s;
+        }
+        
+        .energy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f1c40f, #f39c12);
+            transition: width 0.3s;
+        }
+        
+        .shield-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            transition: width 0.3s;
+        }
+        
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin: 2px;
+            font-size: 12px;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-success {
+            background: #2ecc71;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #27ae60;
+        }
+        
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+        
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(52, 152, 219, 0.2);
+            color: #3498db;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            border: 2px solid #3498db;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+        
+        .back-button:hover {
+            background: rgba(52, 152, 219, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .equipment-upgrade {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+        }
+        
+        .player-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+        
+        .current-player {
+            background: rgba(52, 152, 219, 0.2);
+            border: 1px solid #3498db;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-button">← Back to Hub</a>
+    
+    <div class="game-container">
+        <div class="game-canvas-container">
+            <div class="stars" id="stars"></div>
+            <canvas id="gameCanvas"></canvas>
+            
+            <div class="hud" id="playerHUD">
+                <div style="font-weight: bold; margin-bottom: 10px;">Ship Status</div>
+                <div class="stat-row">
+                    <span>Health:</span>
+                    <span id="healthText">100/100</span>
+                </div>
+                <div class="health-bar">
+                    <div class="health-fill" id="healthFill" style="width: 100%"></div>
+                </div>
+                <div class="stat-row">
+                    <span>Energy:</span>
+                    <span id="energyText">100/100</span>
+                </div>
+                <div class="energy-bar">
+                    <div class="energy-fill" id="energyFill" style="width: 100%"></div>
+                </div>
+                <div class="stat-row">
+                    <span>Shield:</span>
+                    <span id="shieldText">50/50</span>
+                </div>
+                <div class="shield-bar">
+                    <div class="shield-fill" id="shieldFill" style="width: 100%"></div>
+                </div>
+            </div>
+            
+            <div class="timer-display" id="timerDisplay">
+                5:00
+            </div>
+            
+            <div class="controls-help">
+                <div><strong>Controls:</strong></div>
+                <div>W/↑ - Thrust | A/D or ←/→ - Turn</div>
+                <div>Shift - Boost | Mine by ramming asteroids</div>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="player-stats">
+                <h3>🧑‍🚀 Pilot Stats</h3>
+                <div class="stat-row">
+                    <span>Score:</span>
+                    <span id="playerScore">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Credits:</span>
+                    <span id="playerCredits">0</span>
+                </div>
+            </div>
+
+            <div class="inventory">
+                <h3>📦 Cargo Hold</h3>
+                <div class="resource-row">
+                    <span>🔩 Iron:</span>
+                    <span id="ironCount">0</span>
+                </div>
+                <div class="resource-row">
+                    <span>🥇 Gold:</span>
+                    <span id="goldCount">0</span>
+                </div>
+                <div class="resource-row">
+                    <span>💎 Rare Metals:</span>
+                    <span id="rareCount">0</span>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-success" onclick="sellResource('iron', 10)">Sell 10 Iron ($20)</button>
+                    <button class="btn btn-success" onclick="sellResource('gold', 5)">Sell 5 Gold ($50)</button>
+                    <button class="btn btn-success" onclick="sellResource('rare', 1)">Sell 1 Rare ($50)</button>
+                </div>
+            </div>
+
+            <div class="equipment">
+                <h3>⚙️ Ship Upgrades</h3>
+                <div class="equipment-upgrade">
+                    <span>🔧 Drill Power: <span id="drillLevel">1.0</span></span>
+                    <button class="btn btn-warning" onclick="upgradeEquipment('drillPower')">Upgrade</button>
+                </div>
+                <div class="equipment-upgrade">
+                    <span>📦 Cargo: <span id="cargoLevel">100</span></span>
+                    <button class="btn btn-warning" onclick="upgradeEquipment('cargoCapacity')">Upgrade</button>
+                </div>
+                <div class="equipment-upgrade">
+                    <span>🚀 Engine: <span id="engineLevel">1.0</span></span>
+                    <button class="btn btn-warning" onclick="upgradeEquipment('enginePower')">Upgrade</button>
+                </div>
+                <div class="equipment-upgrade">
+                    <span>🛡️ Shield: <span id="shieldLevel">1.0</span></span>
+                    <button class="btn btn-warning" onclick="upgradeEquipment('shieldGenerator')">Upgrade</button>
+                </div>
+            </div>
+
+            <div class="leaderboard">
+                <h3>🏆 Leaderboard</h3>
+                <div id="leaderboardList"></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="startGame()">Start Mining Operation</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="game.js"></script>
+</body>
+</html>

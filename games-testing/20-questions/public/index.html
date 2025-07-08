@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>20 Questions - Multiplayer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 2px solid #4facfe;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #4facfe;
+            text-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .game-info {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            padding: 20px;
+            height: calc(100vh - 140px);
+        }
+
+        .left-panel {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .right-panel {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .questions-container {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .question-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4facfe;
+        }
+
+        .question {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #4facfe;
+        }
+
+        .answer {
+            color: #fff;
+            font-size: 1.1em;
+        }
+
+        .answer.yes {
+            color: #4caf50;
+        }
+
+        .answer.no {
+            color: #f44336;
+        }
+
+        .input-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: auto;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #f44336, #ff5722);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #4caf50, #8bc34a);
+        }
+
+        .players-list {
+            margin-bottom: 20px;
+        }
+
+        .players-list h3 {
+            color: #4facfe;
+            margin-bottom: 10px;
+        }
+
+        .player-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-name {
+            font-weight: bold;
+        }
+
+        .player-score {
+            color: #4facfe;
+            font-weight: bold;
+        }
+
+        .game-status {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .questions-left {
+            font-size: 1.2em;
+            color: #4facfe;
+            font-weight: bold;
+        }
+
+        .role-indicator {
+            font-size: 1.1em;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .role-thinker {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .role-guesser {
+            background: rgba(79, 172, 254, 0.2);
+            color: #4facfe;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            background: #333;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            border: 1px solid #555;
+            font-family: inherit;
+            font-size: 14px;
+            z-index: 1000;
+            transition: background 0.2s ease;
+        }
+
+        .back-button:hover {
+            background: #555;
+            color: #fff;
+        }
+
+        .back-button:visited {
+            color: #fff;
+        }
+
+        .secret-input {
+            background: rgba(255, 193, 7, 0.1);
+            border: 2px solid #ffc107;
+        }
+
+        .guess-input {
+            background: rgba(79, 172, 254, 0.1);
+            border: 2px solid #4facfe;
+        }
+
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message.success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .message.error {
+            background: #f44336;
+            color: white;
+        }
+
+        .message.info {
+            background: #4facfe;
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                padding: 10px;
+            }
+
+            .right-panel {
+                width: auto;
+                order: -1;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤔 20 Questions</h1>
+        <div class="game-info">Think of something, ask yes/no questions, guess the answer!</div>
+    </div>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="questions-container" id="questionsContainer">
+                <div style="text-align: center; opacity: 0.7; margin-top: 50px;">
+                    <h3>Questions will appear here</h3>
+                    <p>The guesser asks yes/no questions to figure out what the thinker is thinking of!</p>
+                </div>
+            </div>
+
+            <div class="input-section" id="inputSection">
+                <div id="waitingMessage" style="text-align: center; opacity: 0.7;">
+                    <h3>Waiting for players...</h3>
+                    <p>Need at least 2 players to start</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="game-status" id="gameStatus">
+                <div class="questions-left">Questions Left: 20</div>
+                <div id="roleIndicator"></div>
+            </div>
+
+            <div class="players-list">
+                <h3>Players (<span id="playerCount">0</span>)</h3>
+                <div id="playersList"></div>
+            </div>
+        </div>
+    </div>
+
+    <a href="/" class="back-button">← Back to Hub</a>
+
+    <!-- Add socket.io script before game.js -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="game.js"></script>
+</body>
+</html>
